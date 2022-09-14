@@ -4,12 +4,12 @@ import typer
 from twitchio.ext import commands
 import requests
 
-from smirnybot9001.config import CONFIG_PATH_OPTION, CHANNEL_OPTION, ADDRESS_OPTION, PORT_OPTION
+from smirnybot9001.config import create_config_and_inject_values, CONFIG_PATH_OPTION, CHANNEL_OPTION, ADDRESS_OPTION, PORT_OPTION
 
 
 class SmirnyBot9001ChatBot(commands.Bot):
     def __init__(self, token, channel, address, port, prefix='!', ):
-        super().__init__(token=token, prefix=prefix, initial_channels=(channel, ))
+        super().__init__(token=token, prefix=prefix, initial_channels=[channel, ])
         self.address = address
         self.port = port
         self.overlay_endpoint = f"http://{address}:{port}/"
@@ -69,8 +69,8 @@ class SmirnyBot9001ChatBot(commands.Bot):
         requests.get(url)
 
 
-def run_bot(token, channel, address, port):
-    bot = SmirnyBot9001ChatBot(token, channel, address, port)
+def run_bot(config):
+    bot = SmirnyBot9001ChatBot(config.token, config.channel, config.address, config.port)
     bot.run()
 
 
@@ -83,15 +83,9 @@ def main():
               address: str = ADDRESS_OPTION,
               port: int = PORT_OPTION,
               ):
-        from smirnybot9001.config import parse_config
-        config = parse_config(config_path)
+        config = create_config_and_inject_values(config_path, locals())
 
-        token = config['chatbot']['token']
-
-        if not channel:
-            channel = config['chatbot']['channel']
-
-        run_bot(token, channel, address, port)
+        run_bot(config)
 
     app(help_option_names=('-h', '--help'))
 
