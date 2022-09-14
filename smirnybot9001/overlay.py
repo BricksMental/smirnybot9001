@@ -169,7 +169,6 @@ class SmirnyBot9001Overlay(remi.App):
         else:
             dwav = importlib.resources.files('smirnybot9001.data') / DEFAULT_DISPLAY_WAV
             self.on_display_wav = remi.gui.load_resource(dwav)
-        print(self.on_display_wav)
         width = config.width
         height = config.height
         debug = config.debug
