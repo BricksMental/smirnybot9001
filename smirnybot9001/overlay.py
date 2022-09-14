@@ -1,16 +1,16 @@
 import abc
 import time
-from pathlib import Path
 from dataclasses import dataclass
+from pathlib import Path
 
 import remi
 import requests
-from bs4 import BeautifulSoup
 import typer
+from bs4 import BeautifulSoup
+from rich import print
 
-from smirnybot9001.config import CONFIG_PATH_OPTION, WIDTH_OPTION, HEIGHT_OPTION, ADDRESS_OPTION, PORT_OPTION,\
-    START_BROWSER_OPTION, DEBUG_OPTION
-
+from smirnybot9001.config import SmirnyBot9001Config, create_config_and_inject_values, CONFIG_PATH_OPTION, WIDTH_OPTION, \
+    HEIGHT_OPTION, ADDRESS_OPTION, PORT_OPTION, START_BROWSER_OPTION, DEBUG_OPTION
 
 APOCALYPSEBURG = 'https://img.bricklink.com/ItemImage/SN/0/70840-1.png'
 HARLEY = 'https://img.bricklink.com/ItemImage/MN/0/tlm134.png'
@@ -154,27 +154,42 @@ class SmirnyBot9001Overlay(remi.App):
         self._hide_image_after = None
         self.commands = {c.irc_command(): c for c in LEGOThing.__subclasses__()}
         self._lego_thing_cache = {}
+        self.on_display_wav = remi.gui.load_resource('E:\Stuff\Kanal\Tools\smirnybot9001_GitHub\data\happy-ending.wav')
 
     def idle(self):
         if self._hide_image_after and time.time() > self._hide_image_after:
             self._hide_image_after = None
             self.hide_image()
 
-    def main(self, width, height, config_path, debug=False):
+    def main(self, config):
+        width = config.width
+        height = config.height
+        debug = config.debug
         bgcolor = 'red' if debug else 'transparent'
         label_bgcolor = 'green' if debug else 'white'
         # only show controls when debug is enabled
         show_controls = debug
-        self.root_vbox = remi.gui.VBox(height=height, width=width, style={'display': 'block', 'overflow': 'visible', 'text-align': 'center', 'background': bgcolor})
-        self.image_vbox = remi.gui.VBox(height='95%', width='99%', style={'display': 'block', 'overflow': 'visible', 'text-align': 'center', 'background': bgcolor})
-        self.inputs_hbox = remi.gui.HBox(height=height / 10, width=width, style={'display': 'block', 'overflow': 'auto', 'text-align': 'center', 'background': bgcolor})
+        self.root_vbox = remi.gui.VBox(height=height, width=width,
+                                       style={'display': 'block', 'overflow': 'visible', 'text-align': 'center',
+                                              'background': bgcolor})
+        self.image_vbox = remi.gui.VBox(height='95%', width='99%',
+                                        style={'display': 'block', 'overflow': 'visible', 'text-align': 'center',
+                                               'background': bgcolor})
+        self.inputs_hbox = remi.gui.HBox(height=height / 10, width=width,
+                                         style={'display': 'block', 'overflow': 'auto', 'text-align': 'center',
+                                                'background': bgcolor})
 
         self.image = remi.gui.Image(APOCALYPSEBURG, height='85%', margin='10px')
-        self.image_description_label = remi.gui.Label(width='100%', height='15%', style={'display': 'block', 'overflow': 'visible', 'text-align': 'center', 'background': 'rgba(0,0,0,.5)', 'color': 'white', 'font-family': 'cursive', 'font-size': '40px', })
+        self.image_description_label = remi.gui.Label(width='100%', height='15%',
+                                                      style={'display': 'block', 'overflow': 'visible',
+                                                             'text-align': 'center', 'background': 'rgba(0,0,0,.6)',
+                                                             'color': 'white', 'font-family': 'cursive',
+                                                             'font-size': '40px', })
         self.set_description_text('🐸🐸🐸🐸 HELLO CHILLIBRIE 🐸🐸🐸🐸 ' * 2)
 
         for command, id in (('set', '10228'), ('fig', 'col128'), ('part', 'wtf')):
-            input_button_hbox = InputButtonHBox(overlay=self, command=command, default_value=id, show_controls=show_controls)
+            input_button_hbox = InputButtonHBox(overlay=self, command=command, default_value=id,
+                                                show_controls=show_controls)
             self.inputs_hbox.append(input_button_hbox)
 
         self.image_vbox.append((self.image, self.image_description_label))
@@ -195,7 +210,8 @@ class SmirnyBot9001Overlay(remi.App):
         self.set_image_url(thing.image_url)
         self.set_description_text(thing.description)
         self.show_image(duration)
-        print(thing.name + thing.description)
+        print('PLAYME')
+        self.execute_javascript(f"(new Audio('{self.on_display_wav}')).play();")
         return thing.description
 
     def set_description_text(self, description):
@@ -213,17 +229,18 @@ class SmirnyBot9001Overlay(remi.App):
         self.image_vbox.css_visibility = 'hidden'
 
 
-def start_overlay(config_path, width, height, address='localhost', port=4711, start_browser=False, debug=False):
-    print('WTF', address)
-    remi.start(SmirnyBot9001Overlay, debug=debug, address=address, port=port, start_browser=start_browser,
+def start_overlay(config: SmirnyBot9001Config):
+    remi.start(SmirnyBot9001Overlay, debug=config.debug, address=config.address, port=config.port,
+               start_browser=config.start_browser,
                multiple_instance=False,
-               userdata=(width, height, config_path, debug))
+               userdata=(config,))
 
 
 def main():
-    app = typer.Typer(add_completion=False, invoke_without_command=True, no_args_is_help=True, pretty_exceptions_enable=False)
+    app = typer.Typer(add_completion=False, invoke_without_command=True, no_args_is_help=True,
+                      pretty_exceptions_enable=False)
 
-    @app.command()
+    @app.callback()
     def start(config_path: Path = CONFIG_PATH_OPTION,
               width: int = WIDTH_OPTION,
               height: int = HEIGHT_OPTION,
@@ -232,8 +249,8 @@ def main():
               start_browser: bool = START_BROWSER_OPTION,
               debug: bool = DEBUG_OPTION,
               ):
-
-        start_overlay(config_path, width, height, address, port, start_browser=start_browser, debug=debug)
+        config = create_config_and_inject_values(config_path, locals())
+        start_overlay(config)
 
     app(help_option_names=('-h', '--help'))
 
