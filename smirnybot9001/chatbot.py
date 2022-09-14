@@ -44,13 +44,15 @@ class SmirnyBot9001ChatBot(commands.Bot):
             await ctx.send(usage)
             return
         number = ctx.view.words[1]
-        await ctx.send(f"☠Got set number {number}")
+        # await ctx.send(f"☠Got set number {number}")
         url = self.overlay_endpoint + f"set/number?value={number}"
         print(url)
-        requests.get(url)
+        r = requests.get(url)
+        print(r)
         url = self.overlay_endpoint + f"set/display"
         print(url)
-        requests.get(url)
+        r = requests.get(url)
+        await ctx.send(r.text)
 
     @commands.command()
     async def fig(self, ctx: commands.Context):
@@ -84,7 +86,6 @@ def main():
               port: int = PORT_OPTION,
               ):
         config = create_config_and_inject_values(config_path, locals())
-
         run_bot(config)
 
     app(help_option_names=('-h', '--help'))
