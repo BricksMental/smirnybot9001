@@ -8,11 +8,13 @@ setup(
 
     packages=[
         'smirnybot9001',
+        'smirnybot9001.data'
 
     ],
 
     package_data={
         'smirnybot9001': ['*conf'],
+        'smirnybot9001.data': ['*wav'],
     },
 
     entry_points={
