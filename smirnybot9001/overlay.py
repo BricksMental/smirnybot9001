@@ -1,0 +1,242 @@
+import abc
+import time
+from pathlib import Path
+from dataclasses import dataclass
+
+import remi
+import requests
+from bs4 import BeautifulSoup
+import typer
+
+from smirnybot9001.config import CONFIG_PATH_OPTION, WIDTH_OPTION, HEIGHT_OPTION, ADDRESS_OPTION, PORT_OPTION,\
+    START_BROWSER_OPTION, DEBUG_OPTION
+
+
+APOCALYPSEBURG = 'https://img.bricklink.com/ItemImage/SN/0/70840-1.png'
+HARLEY = 'https://img.bricklink.com/ItemImage/MN/0/tlm134.png'
+
+OK_HEADERS = ('OK', {'Content-type': 'text/plain'})
+
+
+@dataclass
+class LEGOThing(metaclass=abc.ABCMeta):
+    number: str
+    name: str = None
+    description: str = None
+    image_url: str = None
+    bricklink_url: str = None
+    rebrickable_url: str = None
+    brickset_url: str = None
+
+    def __post_init__(self):
+        self.scrape_info()
+
+    @staticmethod
+    @abc.abstractmethod
+    def irc_command():
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def scrape_info(self):
+        raise NotImplementedError
+
+
+class LEGOSet(LEGOThing):
+    def __init__(self, number):
+        super().__init__(number)
+
+    @staticmethod
+    def irc_command():
+        return 'set'
+
+    def scrape_info(self):
+        self.brickset_url = f"https://brickset.com/sets/{self.number}"
+        self.name = f"{self.irc_command()} {self.number}"
+        self.description = self.get_description()
+        self.image_url = self.get_image_url()
+
+    def get_description(self):
+
+        page = requests.get(self.brickset_url)
+        soup = BeautifulSoup(page.text, 'html.parser')
+        title = soup.find('meta', {"property": "og:title"}).get('content')
+        description = soup.find(property='og:description').get('content')
+        description = f"{title}: {description}"
+        return description
+
+    def get_image_url(self):
+        if '-' not in self.number:
+            img = self.number + '-1'
+        else:
+            img = self.number
+        return f"https://img.bricklink.com/ItemImage/SN/0/{img}.png"
+
+
+class LEGOMiniFig(LEGOThing):
+    def __init__(self, number):
+        super().__init__(number)
+        # self.brickset_url = f"https://brickset.com/sets/{id}"
+
+    @staticmethod
+    def irc_command():
+        return 'fig'
+
+    def scrape_info(self):
+        self.name = f"FIG {self.number}"
+        self.description = self.name
+        self.image_url = f"https://img.bricklink.com/ItemImage/MN/0/{self.number}.png"
+
+
+class LEGOPart(LEGOThing):
+
+    @staticmethod
+    def irc_command():
+        return 'part'
+
+    def scrape_info(self):
+        self.name = f"{self.irc_command()} {self.number}"
+        self.description = self.name
+        self.image_url = APOCALYPSEBURG
+
+
+class InputButtonHBox(remi.gui.HBox):
+    def __init__(self, overlay, command, default_value='', show_controls=True, default_duration=60, *args, **kwargs):
+        super().__init__(attributes={'id': command}, *args, **kwargs)
+        display_style = 'initial' if show_controls else 'none'
+        self.overlay = overlay
+        self.command = command
+        self.default_duration = int(default_duration)
+        self.id_label = remi.gui.Label(f"{command} id", style={'display': display_style})
+        self.id_input = remi.gui.Input(style={'display': display_style})
+        self.id_input.set_value(default_value)
+        self.duration_label = remi.gui.Label(f"{command} duration (s)", style={'display': display_style})
+        self.duration_input = remi.gui.Input(style={'display': display_style})
+        self.duration_input.set_value(default_duration)
+        self.button = remi.gui.Button(text=f"Show {command}", style={'display': display_style})
+
+        self.button.onclick.do(self.on_button_click)
+
+        self.append((self.id_label, self.id_input, self.duration_label, self.duration_input, self.button))
+
+    def number(self, value):
+        self.id_input.set_value(value)
+        return OK_HEADERS
+
+    def duration(self, value):
+        self.duration_input.set_value(value)
+        return OK_HEADERS
+
+    def on_button_click(self, _button):
+        self.display()
+
+    def display(self):
+        try:
+            duration = int(self.duration_input.get_value())
+        except ValueError:
+            duration = self.default_duration
+            self.duration_input.set_value(self.default_duration)
+        description = self.overlay.display(self.command, self.id_input.get_value(), duration)
+        return '☠' + description + '💀', {'Content-type': 'text/plain; charset=utf-8', 'Content-encoding': 'utf-8'}
+        # return self.description()
+        # return OK_HEADERS
+
+    def description(self):
+        description = self.overlay.description(self.command, self.id_input.get_value())
+        description = '☠' + description + '💀'
+        self.overlay.set_description_text(description)
+        return '☠' + description + '💀', {'Content-type': 'text/plain; charset=utf-8', 'Content-encoding': 'utf-8'}
+
+
+class SmirnyBot9001Overlay(remi.App):
+
+    def __init__(self, *args):
+        super().__init__(*args)
+        self._hide_image_after = None
+        self.commands = {c.irc_command(): c for c in LEGOThing.__subclasses__()}
+        self._lego_thing_cache = {}
+
+    def idle(self):
+        if self._hide_image_after and time.time() > self._hide_image_after:
+            self._hide_image_after = None
+            self.hide_image()
+
+    def main(self, width, height, config_path, debug=False):
+        bgcolor = 'red' if debug else 'transparent'
+        label_bgcolor = 'green' if debug else 'white'
+        # only show controls when debug is enabled
+        show_controls = debug
+        self.root_vbox = remi.gui.VBox(height=height, width=width, style={'display': 'block', 'overflow': 'visible', 'text-align': 'center', 'background': bgcolor})
+        self.image_vbox = remi.gui.VBox(height='95%', width='99%', style={'display': 'block', 'overflow': 'visible', 'text-align': 'center', 'background': bgcolor})
+        self.inputs_hbox = remi.gui.HBox(height=height / 10, width=width, style={'display': 'block', 'overflow': 'auto', 'text-align': 'center', 'background': bgcolor})
+
+        self.image = remi.gui.Image(APOCALYPSEBURG, height='85%', margin='10px')
+        self.image_description_label = remi.gui.Label(width='100%', height='15%', style={'display': 'block', 'overflow': 'visible', 'text-align': 'center', 'background': 'rgba(0,0,0,.5)', 'color': 'white', 'font-family': 'cursive', 'font-size': '40px', })
+        self.set_description_text('🐸🐸🐸🐸 HELLO CHILLIBRIE 🐸🐸🐸🐸 ' * 2)
+
+        for command, id in (('set', '10228'), ('fig', 'col128'), ('part', 'wtf')):
+            input_button_hbox = InputButtonHBox(overlay=self, command=command, default_value=id, show_controls=show_controls)
+            self.inputs_hbox.append(input_button_hbox)
+
+        self.image_vbox.append((self.image, self.image_description_label))
+        self.root_vbox.append((self.image_vbox, self.inputs_hbox))
+        return self.root_vbox
+
+    def get_lego_thing(self, command, number):
+        if (command, number) in self._lego_thing_cache:
+            return self._lego_thing_cache[(command, number)]
+        else:
+            lego_thing = self.commands[command](number)
+            self._lego_thing_cache[(command, number)] = lego_thing
+            return lego_thing
+
+    def display(self, command, number, duration):
+        print('DISPLAY ON OVERLAY', command, number, duration)
+        thing = self.get_lego_thing(command, number)
+        self.set_image_url(thing.image_url)
+        self.set_description_text(thing.description)
+        self.show_image(duration)
+        print(thing.name + thing.description)
+        return thing.description
+
+    def set_description_text(self, description):
+        self.image_description_label.set_text(description)
+
+    def set_image_url(self, url):
+        self.image.set_image(url)
+
+    def show_image(self, duration):
+        print(f"SHOW {duration}")
+        self.image_vbox.css_visibility = 'visible'
+        self._hide_image_after = time.time() + duration
+
+    def hide_image(self):
+        self.image_vbox.css_visibility = 'hidden'
+
+
+def start_overlay(config_path, width, height, address='localhost', port=4711, start_browser=False, debug=False):
+    print('WTF', address)
+    remi.start(SmirnyBot9001Overlay, debug=debug, address=address, port=port, start_browser=start_browser,
+               multiple_instance=False,
+               userdata=(width, height, config_path, debug))
+
+
+def main():
+    app = typer.Typer(add_completion=False, invoke_without_command=True, no_args_is_help=True, pretty_exceptions_enable=False)
+
+    @app.command()
+    def start(config_path: Path = CONFIG_PATH_OPTION,
+              width: int = WIDTH_OPTION,
+              height: int = HEIGHT_OPTION,
+              address: str = ADDRESS_OPTION,
+              port: int = PORT_OPTION,
+              start_browser: bool = START_BROWSER_OPTION,
+              debug: bool = DEBUG_OPTION,
+              ):
+
+        start_overlay(config_path, width, height, address, port, start_browser=start_browser, debug=debug)
+
+    app(help_option_names=('-h', '--help'))
+
+
+if __name__ == '__main__':
+    main()
