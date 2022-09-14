@@ -2,6 +2,7 @@ import abc
 import time
 from dataclasses import dataclass
 from pathlib import Path
+import importlib.resources
 
 import remi
 import requests
@@ -14,6 +15,7 @@ from smirnybot9001.config import SmirnyBot9001Config, create_config_and_inject_v
 
 APOCALYPSEBURG = 'https://img.bricklink.com/ItemImage/SN/0/70840-1.png'
 HARLEY = 'https://img.bricklink.com/ItemImage/MN/0/tlm134.png'
+DEFAULT_DISPLAY_WAV = 'happy-ending.wav'
 
 OK_HEADERS = ('OK', {'Content-type': 'text/plain'})
 
@@ -154,14 +156,20 @@ class SmirnyBot9001Overlay(remi.App):
         self._hide_image_after = None
         self.commands = {c.irc_command(): c for c in LEGOThing.__subclasses__()}
         self._lego_thing_cache = {}
-        self.on_display_wav = remi.gui.load_resource('E:\Stuff\Kanal\Tools\smirnybot9001_GitHub\data\happy-ending.wav')
+
 
     def idle(self):
         if self._hide_image_after and time.time() > self._hide_image_after:
             self._hide_image_after = None
             self.hide_image()
 
-    def main(self, config):
+    def main(self, config: SmirnyBot9001Config):
+        if config.display_wav_abs_path and config.display_wav_abs_path.exists():
+            self.on_display_wav = remi.gui.load_resource(config.display_wav_abs_path)
+        else:
+            dwav = importlib.resources.files('smirnybot9001.data') / DEFAULT_DISPLAY_WAV
+            self.on_display_wav = remi.gui.load_resource(dwav)
+        print(self.on_display_wav)
         width = config.width
         height = config.height
         debug = config.debug
@@ -237,7 +245,7 @@ def start_overlay(config: SmirnyBot9001Config):
 
 
 def main():
-    app = typer.Typer(add_completion=False, invoke_without_command=True, no_args_is_help=True,
+    app = typer.Typer(add_completion=False, invoke_without_command=True, no_args_is_help=False,
                       pretty_exceptions_enable=False)
 
     @app.callback()
