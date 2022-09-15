@@ -1,4 +1,6 @@
 import abc
+import dataclasses
+import json
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -53,6 +55,7 @@ class LEGOSet(LEGOThing):
 
     def scrape_info(self):
         self.brickset_url = f"https://brickset.com/sets/{self.number}"
+        self.bricklink_url = f"https://www.bricklink.com/v2/catalog/catalogitem.page?S={self.number}"
         self.name = f"{self.irc_command()} {self.number}"
         self.description = self.get_description()
         self.image_url = self.get_image_url()
@@ -63,7 +66,7 @@ class LEGOSet(LEGOThing):
         soup = BeautifulSoup(page.text, 'html.parser')
         title = soup.find('meta', {"property": "og:title"}).get('content')
         description = soup.find(property='og:description').get('content')
-        description = f"{title}: {description}"
+        description = f"☠{title}: {description}☠"
         return description
 
     def get_image_url(self):
@@ -137,8 +140,10 @@ class InputButtonHBox(remi.gui.HBox):
         except ValueError:
             duration = self.default_duration
             self.duration_input.set_value(self.default_duration)
-        description = self.overlay.display(self.command, self.id_input.get_value(), duration)
-        return '☠' + description + '💀', {'Content-type': 'text/plain; charset=utf-8', 'Content-encoding': 'utf-8'}
+        thing = self.overlay.display(self.command, self.id_input.get_value(), duration)
+        print(thing)
+        json_thing = json.dumps(dataclasses.asdict(thing), )
+        return json_thing, {'Content-type': 'application/json; charset=utf-8', 'Content-encoding': 'utf-8'}
         # return self.description()
         # return OK_HEADERS
 
@@ -217,9 +222,8 @@ class SmirnyBot9001Overlay(remi.App):
         self.set_image_url(thing.image_url)
         self.set_description_text(thing.description)
         self.show_image(duration)
-        print('PLAYME')
         self.execute_javascript(f"(new Audio('{self.on_display_wav}')).play();")
-        return thing.description
+        return thing
 
     def set_description_text(self, description):
         self.image_description_label.set_text(description)
