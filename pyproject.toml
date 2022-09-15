@@ -1,0 +1,36 @@
+[build-system]
+requires = [
+    "hatchling>=1.9.0",
+]
+build-backend = "hatchling.build"
+
+[project]
+name = "smirnybot9001"
+version = "0.0.2"
+readme = "README.md"
+license = ""
+requires-python = ">=3"
+dependencies = [
+    "beautifulsoup4",
+    "remi",
+    "requests",
+    "rich",
+    "tomlkit",
+    "twitchio",
+    "typer",
+]
+
+[project.optional-dependencies]
+
+[project.scripts]
+chatbot = "smirnybot9001.chatbot:main"
+overlay = "smirnybot9001.overlay:main"
+smirnyboot9001 = "smirnybot9001.smirnyboot9001:main"
+
+[tool.hatch.version]
+path = "smirnybot9001/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/smirnybot9001",
+]
