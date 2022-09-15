@@ -1,10 +1,11 @@
+"""setup.py for smirnybot9001: A twitch chatbot for displaying LEGO sets, minifigs and parts on an HTML overlay"""
 from setuptools import setup
-name = 'smirnybot9001'
+NAME = 'smirnybot9001'
 
-version = '0.0.1'
+VERSION = '0.0.1'
 setup(
-    name=name,
-    version=version,
+    name=NAME,
+    version=VERSION,
 
     packages=[
         'smirnybot9001',
