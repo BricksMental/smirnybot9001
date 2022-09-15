@@ -71,9 +71,3 @@ def create_config_and_inject_values(config_path: Path, values: dict):
     config = SmirnyBot9001Config.from_file_path(config_path)
     config.inject_values(values)
     return config
-
-
-
-
-
-

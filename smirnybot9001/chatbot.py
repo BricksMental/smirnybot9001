@@ -40,7 +40,7 @@ class SmirnyBot9001ChatBot(commands.Bot):
     async def set(self, ctx: commands.Context):
         usage = "☠☠ Usage: !set SETNR [DURATION] ☠☠"
         print(ctx.view.words)
-        if not len(ctx.view.words):
+        if not len(ctx.view.words) > 0:
             await ctx.send(usage)
             return
         number = ctx.view.words[1]
