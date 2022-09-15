@@ -47,28 +47,28 @@ class SmirnyBot9001ChatBot(commands.Bot):
         # await ctx.send(f"☠Got set number {number}")
         url = self.overlay_endpoint + f"set/number?value={number}"
         print(url)
-        r = requests.get(url)
+        r = requests.get(url, timeout=5)
         print(r)
         url = self.overlay_endpoint + f"set/display"
         print(url)
-        r = requests.get(url)
+        r = requests.get(url, timeour=5)
         await ctx.send(r.text)
 
     @commands.command()
     async def fig(self, ctx: commands.Context):
         usage = "☠☠ Usage: !fig SETNR [DURATION] ☠☠"
         print(ctx.view.words)
-        if not len(ctx.view.words):
+        if not len(ctx.view.words) > 0:
             await ctx.send(usage)
             return
         number = ctx.view.words[1]
         await ctx.send(f"☠Got minifig number {number}")
         url = self.overlay_endpoint + f"fig/number?value={number}"
         print(url)
-        requests.get(url)
+        requests.get(url, timeout=5)
         url = self.overlay_endpoint + f"fig/display"
         print(url)
-        requests.get(url)
+        requests.get(url, timeout=5)
 
 
 def run_bot(config):
