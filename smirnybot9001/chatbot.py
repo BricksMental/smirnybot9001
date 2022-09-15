@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 
 import typer
 from twitchio.ext import commands
@@ -47,12 +48,26 @@ class SmirnyBot9001ChatBot(commands.Bot):
         # await ctx.send(f"☠Got set number {number}")
         url = self.overlay_endpoint + f"set/number?value={number}"
         print(url)
-        r = requests.get(url, timeout=5)
-        print(r)
+        requests.get(url, timeout=5)
+        try:
+            duration = ctx.view.words[2]
+            url = self.overlay_endpoint + f"set/duration?value={number}"
+            print(url)
+            requests.get(url, timeout=5)
+        except KeyError:
+            pass
         url = self.overlay_endpoint + f"set/display"
         print(url)
-        r = requests.get(url, timeour=5)
-        await ctx.send(r.text)
+        json_info = requests.get(url, timeout=5).content
+        info = json.loads(json_info)
+        print(info)
+        await ctx.send(info['description'])
+        blu = info['bricklink_url']
+        if blu is not None:
+            await ctx.send(blu)
+        bsu = info['brickset_url']
+        if bsu is not None:
+            await ctx.send(bsu)
 
     @commands.command()
     async def fig(self, ctx: commands.Context):
