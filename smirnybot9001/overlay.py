@@ -87,9 +87,17 @@ class LEGOMiniFig(LEGOThing):
         return 'fig'
 
     def scrape_info(self):
+        self.brickset_url = f"https://brickset.com/minifigs/{self.number}"
+        self.bricklink_url = f"https://www.bricklink.com/v2/catalog/catalogitem.page?M={self.number}"
         self.name = f"FIG {self.number}"
-        self.description = self.name
+        self.description = self.get_description()
         self.image_url = f"https://img.bricklink.com/ItemImage/MN/0/{self.number}.png"
+
+    def get_description(self):
+        page = requests.get(self.brickset_url)
+        soup = BeautifulSoup(page.text, 'html.parser')
+        description = soup.find('meta', {"property": "og:title"}).get('content')
+        return description
 
 
 class LEGOPart(LEGOThing):

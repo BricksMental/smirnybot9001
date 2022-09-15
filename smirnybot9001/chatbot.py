@@ -65,9 +65,9 @@ class SmirnyBot9001ChatBot(commands.Bot):
         blu = info['bricklink_url']
         if blu is not None:
             await ctx.send(blu)
-        bsu = info['brickset_url']
-        if bsu is not None:
-            await ctx.send(bsu)
+        #bsu = info['brickset_url']
+        #if bsu is not None:
+        #    await ctx.send(bsu)
 
     @commands.command()
     async def fig(self, ctx: commands.Context):
@@ -83,7 +83,10 @@ class SmirnyBot9001ChatBot(commands.Bot):
         requests.get(url, timeout=5)
         url = self.overlay_endpoint + f"fig/display"
         print(url)
-        requests.get(url, timeout=5)
+        json_info = requests.get(url, timeout=5).content
+        info = json.loads(json_info)
+        await ctx.send(info['description'])
+        await ctx.send(info['bricklink_url'])
 
 
 def run_bot(config):
