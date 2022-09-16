@@ -4,6 +4,10 @@ from dataclasses import dataclass
 import tomlkit.toml_file
 import typer
 
+# seconds
+MAX_DURATION = 60
+
+
 DEFAULT_CONFIG_PATH = Path.home() / 'smirnybot9001.conf'
 CONFIG_PATH_OPTION = typer.Option(DEFAULT_CONFIG_PATH, '-c', '--config')
 CHANNEL_OPTION = typer.Option(None, '--channel', show_default=False)
@@ -21,11 +25,12 @@ class SmirnyBot9001Config():
     height: int
     channel: str
     token: str
-    display_wav_abs_path: Path=None
-    address: str='127.0.0.1'
-    port: int=4711
-    start_browser: bool=False
-    debug: bool=False
+    display_wav_abs_path: Path = None
+    address: str = '127.0.0.1'
+    port: int = 4711
+    start_browser: bool = False
+    debug: bool = False
+    default_duration: int = 10
 
     @classmethod
     def from_file_path(cls, config_path: Path):
@@ -44,6 +49,7 @@ class SmirnyBot9001Config():
         port = get_value('overlay', 'port', notfound=4711)
         start_browser = get_value('overlay', 'start_browser', notfound=False)
         debug = get_value('overlay', 'debug', notfound=False)
+        default_duration = get_value('overlay', 'default_duration', notfound=10)
 
         display_wav_path = get_value('overlay', 'display_wav_path', notfound=None)
         if display_wav_path:
@@ -51,7 +57,7 @@ class SmirnyBot9001Config():
             if not display_wav_path.is_absolute():
                 display_wav_path = config_path.parent / display_wav_path
 
-        return cls(width, height, channel, token, display_wav_path, address, port, start_browser, debug)
+        return cls(width, height, channel, token, display_wav_path, address, port, start_browser, debug, default_duration)
 
     def inject_values(self, value_dict: dict):
         for key, value in value_dict.items():
