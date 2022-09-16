@@ -40,7 +40,6 @@ class SmirnyBot9001ChatBot(commands.Bot):
     @commands.command()
     async def set(self, ctx: commands.Context):
         usage = "☠☠ Usage: !set SETNR [DURATION] ☠☠"
-        print(ctx.view.words)
         if not len(ctx.view.words) > 0:
             await ctx.send(usage)
             return
@@ -49,30 +48,24 @@ class SmirnyBot9001ChatBot(commands.Bot):
         url = self.overlay_endpoint + f"set/number?value={number}"
         print(url)
         requests.get(url, timeout=5)
-        try:
-            duration = ctx.view.words[2]
-            url = self.overlay_endpoint + f"set/duration?value={number}"
-            print(url)
-            requests.get(url, timeout=5)
-        except KeyError:
-            pass
+        if len(ctx.view.words) > 1:
+            try:
+                duration = int(ctx.view.words[2])
+                url = self.overlay_endpoint + f"set/duration?value={duration}"
+                print(url)
+                requests.get(url, timeout=5)
+            except ValueError:
+                await ctx.send(f"Not an integer: {ctx.view.words[2]}. Ignoring bad duration")
         url = self.overlay_endpoint + f"set/display"
         print(url)
         json_info = requests.get(url, timeout=5).content
         info = json.loads(json_info)
-        print(info)
         await ctx.send(info['description'])
-        blu = info['bricklink_url']
-        if blu is not None:
-            await ctx.send(blu)
-        #bsu = info['brickset_url']
-        #if bsu is not None:
-        #    await ctx.send(bsu)
+        await ctx.send(info['bricklink_url'])
 
     @commands.command()
     async def fig(self, ctx: commands.Context):
         usage = "☠☠ Usage: !fig SETNR [DURATION] ☠☠"
-        print(ctx.view.words)
         if not len(ctx.view.words) > 0:
             await ctx.send(usage)
             return

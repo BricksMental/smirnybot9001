@@ -149,7 +149,6 @@ class InputButtonHBox(remi.gui.HBox):
             duration = self.default_duration
             self.duration_input.set_value(self.default_duration)
         thing = self.overlay.display(self.command, self.id_input.get_value(), duration)
-        print(thing)
         json_thing = json.dumps(dataclasses.asdict(thing), )
         return json_thing, {'Content-type': 'application/json; charset=utf-8', 'Content-encoding': 'utf-8'}
         # return self.description()
@@ -226,7 +225,6 @@ class SmirnyBot9001Overlay(remi.App):
             return lego_thing
 
     def display(self, command, number, duration):
-        print('DISPLAY ON OVERLAY', command, number, duration)
         thing = self.get_lego_thing(command, number)
         self.set_image_url(thing.image_url)
         self.set_description_text(thing.description)
@@ -241,7 +239,6 @@ class SmirnyBot9001Overlay(remi.App):
         self.image.set_image(url)
 
     def show_image(self, duration):
-        print(f"SHOW {duration}")
         self.image_vbox.css_visibility = 'visible'
         self._hide_image_after = time.time() + duration
 
