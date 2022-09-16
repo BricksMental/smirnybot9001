@@ -13,13 +13,16 @@ from bs4 import BeautifulSoup
 from rich import print
 
 from smirnybot9001.config import SmirnyBot9001Config, create_config_and_inject_values, CONFIG_PATH_OPTION, WIDTH_OPTION, \
-    HEIGHT_OPTION, ADDRESS_OPTION, PORT_OPTION, START_BROWSER_OPTION, DEBUG_OPTION
+    HEIGHT_OPTION, ADDRESS_OPTION, PORT_OPTION, START_BROWSER_OPTION, DEBUG_OPTION, MAX_DURATION
 
 APOCALYPSEBURG = 'https://img.bricklink.com/ItemImage/SN/0/70840-1.png'
 HARLEY = 'https://img.bricklink.com/ItemImage/MN/0/tlm134.png'
 DEFAULT_DISPLAY_WAV = 'happy-ending.wav'
 
-OK_HEADERS = ('OK', {'Content-type': 'text/plain'})
+TEXT_PLAIN_HEADERS = {'Content-type': 'text/plain; charset=utf-8', 'Content-encoding': 'utf-8'}
+APPLICATION_JSON_HEADERS = {'Content-type': 'application/json; charset=utf-8', 'Content-encoding': 'utf-8'}
+
+OK_HEADERS = ('OK', TEXT_PLAIN_HEADERS)
 
 
 @dataclass
@@ -113,7 +116,7 @@ class LEGOPart(LEGOThing):
 
 
 class InputButtonHBox(remi.gui.HBox):
-    def __init__(self, overlay, command, default_value='', show_controls=True, default_duration=60, *args, **kwargs):
+    def __init__(self, overlay, command, default_value='', show_controls=True, default_duration=10, *args, **kwargs):
         super().__init__(attributes={'id': command}, *args, **kwargs)
         display_style = 'initial' if show_controls else 'none'
         self.overlay = overlay
@@ -136,8 +139,16 @@ class InputButtonHBox(remi.gui.HBox):
         return OK_HEADERS
 
     def duration(self, value):
-        self.duration_input.set_value(value)
-        return OK_HEADERS
+        try:
+            duration = int(value)
+            if duration > MAX_DURATION:
+                print(f"Some trickster wants to go above max duration: {duration}")
+                duration = self.default_duration
+            self.duration_input.set_value(duration)
+            return OK_HEADERS
+        except ValueError:
+            print(f"[red] Ignoring bad duration {value}")
+            return f"Bad value {value}", TEXT_PLAIN_HEADERS
 
     def on_button_click(self, _button):
         self.display()
@@ -150,23 +161,14 @@ class InputButtonHBox(remi.gui.HBox):
             self.duration_input.set_value(self.default_duration)
         thing = self.overlay.display(self.command, self.id_input.get_value(), duration)
         json_thing = json.dumps(dataclasses.asdict(thing), )
-        return json_thing, {'Content-type': 'application/json; charset=utf-8', 'Content-encoding': 'utf-8'}
-        # return self.description()
-        # return OK_HEADERS
-
-    def description(self):
-        description = self.overlay.description(self.command, self.id_input.get_value())
-        description = '☠' + description + '💀'
-        self.overlay.set_description_text(description)
-        return '☠' + description + '💀', {'Content-type': 'text/plain; charset=utf-8', 'Content-encoding': 'utf-8'}
+        return json_thing, APPLICATION_JSON_HEADERS
 
 
 class SmirnyBot9001Overlay(remi.App):
 
     def __init__(self, *args):
         super().__init__(*args)
-        self._hide_image_after = None
-        self.commands = {c.irc_command(): c for c in LEGOThing.__subclasses__()}
+        self._commands = {c.irc_command(): c for c in LEGOThing.__subclasses__()}
         self._lego_thing_cache = {}
 
     def idle(self):
@@ -178,10 +180,10 @@ class SmirnyBot9001Overlay(remi.App):
 
     def main(self, config: SmirnyBot9001Config):
         if config.display_wav_abs_path and config.display_wav_abs_path.exists():
-            self.on_display_wav = remi.gui.load_resource(config.display_wav_abs_path)
+            self._on_display_wav = remi.gui.load_resource(config.display_wav_abs_path)
         else:
             dwav = importlib.resources.files('smirnybot9001.data') / DEFAULT_DISPLAY_WAV
-            self.on_display_wav = remi.gui.load_resource(dwav)
+            self._on_display_wav = remi.gui.load_resource(dwav)
         width = config.width
         height = config.height
         debug = config.debug
@@ -209,7 +211,7 @@ class SmirnyBot9001Overlay(remi.App):
 
         for command, id in (('set', '10228'), ('fig', 'col128'), ('part', 'wtf')):
             input_button_hbox = InputButtonHBox(overlay=self, command=command, default_value=id,
-                                                show_controls=show_controls)
+                                                show_controls=show_controls, default_duration=config.default_duration)
             self.inputs_hbox.append(input_button_hbox)
 
         self.image_vbox.append((self.image, self.image_description_label))
@@ -220,7 +222,7 @@ class SmirnyBot9001Overlay(remi.App):
         if (command, number) in self._lego_thing_cache:
             return self._lego_thing_cache[(command, number)]
         else:
-            lego_thing = self.commands[command](number)
+            lego_thing = self._commands[command](number)
             self._lego_thing_cache[(command, number)] = lego_thing
             return lego_thing
 
@@ -229,7 +231,7 @@ class SmirnyBot9001Overlay(remi.App):
         self.set_image_url(thing.image_url)
         self.set_description_text(thing.description)
         self.show_image(duration)
-        self.execute_javascript(f"(new Audio('{self.on_display_wav}')).play();")
+        self.execute_javascript(f"(new Audio('{self._on_display_wav}')).play();")
         return thing
 
     def set_description_text(self, description):
