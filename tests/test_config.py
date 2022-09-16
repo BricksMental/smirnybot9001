@@ -32,6 +32,7 @@ def test_create_good_config_obj():
     assert config.display_wav_abs_path.parent == Path(__file__).parent
     assert config.debug is True
     assert config.start_browser is True
+    assert config.default_duration == 23
 
 
 def test_create_minimal_config_obj():
