@@ -170,11 +170,12 @@ class SmirnyBot9001Overlay(remi.App):
         self.commands = {c.irc_command(): c for c in LEGOThing.__subclasses__()}
         self._lego_thing_cache = {}
 
-
     def idle(self):
-        if self._hide_image_after and time.time() > self._hide_image_after:
-            self._hide_image_after = None
-            self.hide_image()
+
+        if hasattr(self, '_hide_image_after'): # check if already initialized, idle() might be called before __init__
+            if self._hide_image_after and time.time() > self._hide_image_after:
+                self._hide_image_after = None
+                self.hide_image()
 
     def main(self, config: SmirnyBot9001Config):
         if config.display_wav_abs_path and config.display_wav_abs_path.exists():
