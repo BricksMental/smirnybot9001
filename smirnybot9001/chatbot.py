@@ -9,11 +9,28 @@ from smirnybot9001.config import create_config_and_inject_values, CONFIG_PATH_OP
 
 
 class SmirnyBot9001ChatBot(commands.Bot):
-    def __init__(self, token, channel, address, port, prefix='!', ):
+    def __init__(self, token, channel, address, port, default_duration, prefix='!', ):
         super().__init__(token=token, prefix=prefix, initial_channels=[channel, ])
         self.address = address
         self.port = port
+        self.default_duration = default_duration
         self.overlay_endpoint = f"http://{address}:{port}/"
+
+    async def send_request(self, path, query=None):
+        url = f"{self.overlay_endpoint}{path}"
+        if query is not None:
+            url = f"{url}?{query}"
+        print(url)
+        return requests.get(url, timeout=5)
+
+    async def extract_duration(self, ctx):
+        duration = self.default_duration
+        if len(ctx.view.words) > 1:
+            try:
+                duration = int(ctx.view.words[2])
+            except ValueError:
+                await ctx.send(f"Not an integer: {ctx.view.words[2]}. Ignoring bad duration")
+        return duration
 
     async def event_ready(self):
         print(f'Logged in as | {self.nick}')
@@ -44,22 +61,14 @@ class SmirnyBot9001ChatBot(commands.Bot):
             await ctx.send(usage)
             return
         number = ctx.view.words[1]
-        # await ctx.send(f"☠Got set number {number}")
-        url = self.overlay_endpoint + f"set/number?value={number}"
-        print(url)
-        requests.get(url, timeout=5)
-        if len(ctx.view.words) > 1:
-            try:
-                duration = int(ctx.view.words[2])
-                url = self.overlay_endpoint + f"set/duration?value={duration}"
-                print(url)
-                requests.get(url, timeout=5)
-            except ValueError:
-                await ctx.send(f"Not an integer: {ctx.view.words[2]}. Ignoring bad duration")
-        url = self.overlay_endpoint + f"set/display"
-        print(url)
-        json_info = requests.get(url, timeout=5).content
-        info = json.loads(json_info)
+        await self.send_request('set/number', f"value={number}")
+
+        duration = await self.extract_duration(ctx)
+        await self.send_request('set/duration', f"value={duration}")
+
+        json_info = await self.send_request("set/display")
+        info = json.loads(json_info.content)
+
         await ctx.send(info['description'])
         await ctx.send(info['bricklink_url'])
 
@@ -70,25 +79,25 @@ class SmirnyBot9001ChatBot(commands.Bot):
             await ctx.send(usage)
             return
         number = ctx.view.words[1]
-        await ctx.send(f"☠Got minifig number {number}")
-        url = self.overlay_endpoint + f"fig/number?value={number}"
-        print(url)
-        requests.get(url, timeout=5)
-        url = self.overlay_endpoint + f"fig/display"
-        print(url)
-        json_info = requests.get(url, timeout=5).content
-        info = json.loads(json_info)
+
+        await self.send_request('fig/number', f"value={number}")
+
+        duration = await self.extract_duration(ctx)
+        await self.send_request('fig/duration', f"value={duration}")
+
+        json_info = await self.send_request('fig/display')
+        info = json.loads(json_info.content)
         await ctx.send(info['description'])
         await ctx.send(info['bricklink_url'])
 
 
 def run_bot(config):
-    bot = SmirnyBot9001ChatBot(config.token, config.channel, config.address, config.port)
+    bot = SmirnyBot9001ChatBot(config.token, config.channel, config.address, config.port, config.default_duration)
     bot.run()
 
 
 def main():
-    app = typer.Typer(add_completion=False, invoke_without_command=True, no_args_is_help=True, pretty_exceptions_show_locals=False)
+    app = typer.Typer(add_completion=False, invoke_without_command=True, no_args_is_help=True, pretty_exceptions_enable=False)
 
     @app.command()
     def start(config_path: Path = CONFIG_PATH_OPTION,
