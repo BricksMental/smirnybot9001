@@ -12,7 +12,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "smirnybot9001"
-version = "0.0.2"
+version = "0.0.3"
 description = "A twitch chatbot for displaying LEGO sets, minifigs and parts on an HTML overlay"
 authors = [
   { name="Bricks Mental", email="bricks.mental@gmail.com" },
@@ -33,7 +33,7 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: OS Independent",
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 3 - Alpha",
 ]
 
 [project.urls]
