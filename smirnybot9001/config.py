@@ -30,7 +30,7 @@ class SmirnyBot9001Config():
     port: int = 4711
     start_browser: bool = False
     debug: bool = False
-    default_duration: int = 10
+    default_duration: int = 30
 
     @classmethod
     def from_file_path(cls, config_path: Path):
@@ -41,8 +41,8 @@ class SmirnyBot9001Config():
             except KeyError:
                 return notfound
 
-        width = get_value('overlay', 'width')
-        height = get_value('overlay', 'height')
+        width = get_value('overlay', 'width', notfound=1920)
+        height = get_value('overlay', 'height', notfound=1080)
         channel = get_value('chatbot', 'channel')
         token = get_value('chatbot', 'token')
         address =  get_value('overlay', 'address', notfound='127.0.0.1')
