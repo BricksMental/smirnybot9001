@@ -23,14 +23,7 @@ class SmirnyBot9001ChatBot(commands.Bot):
         print(url)
         return requests.get(url, timeout=5)
 
-    async def extract_duration(self, ctx):
-        duration = self.default_duration
-        if len(ctx.view.words) > 1:
-            try:
-                duration = int(ctx.view.words[2])
-            except ValueError:
-                await ctx.send(f"Not an integer: {ctx.view.words[2]}. Ignoring bad duration")
-        return duration
+
 
     async def event_ready(self):
         print(f'Logged in as | {self.nick}')
@@ -60,15 +53,15 @@ class SmirnyBot9001ChatBot(commands.Bot):
         if not len(ctx.view.words) > 0:
             await ctx.send(usage)
             return
-        number = ctx.view.words[1]
-        await self.send_request('set/number', f"value={number}")
 
-        duration = await self.extract_duration(ctx)
+        number = ctx.view.words[1]
+        duration = await extract_integer(ctx, position=2, default=self.default_duration)
+
+        await self.send_request('set/number', f"value={number}")
         await self.send_request('set/duration', f"value={duration}")
 
         json_info = await self.send_request("set/display")
         info = json.loads(json_info.content)
-
         await ctx.send(info['description'])
         await ctx.send(info['bricklink_url'])
 
@@ -78,17 +71,56 @@ class SmirnyBot9001ChatBot(commands.Bot):
         if not len(ctx.view.words) > 0:
             await ctx.send(usage)
             return
+
         number = ctx.view.words[1]
+        duration = await extract_integer(ctx, position=2, default=self.default_duration)
 
         await self.send_request('fig/number', f"value={number}")
-
-        duration = await self.extract_duration(ctx)
         await self.send_request('fig/duration', f"value={duration}")
 
         json_info = await self.send_request('fig/display')
         info = json.loads(json_info.content)
         await ctx.send(info['description'])
         await ctx.send(info['bricklink_url'])
+
+    @commands.command()
+    async def part(self, ctx: commands.Context):
+        num_words = len(ctx.view.words)
+        usage = "☠☠ Usage: !part PARTNR [COLOR] [DURATION] ☠☠"
+        if num_words == 0 or num_words > 3:
+            await ctx.send(usage)
+            return
+
+        number = ctx.view.words[1]
+        color = None
+
+        if num_words == 1:
+            duration = self.default_duration
+        else:
+            duration = await extract_integer(ctx, position=num_words, default=self.default_duration)
+            if num_words == 3:
+                color = ctx.view.words[2]
+
+        await self.send_request('part/number', f"value={number}")
+        await self.send_request('part/duration', f"value={duration}")
+        await self.send_request('part/color', f"value={color}")
+
+        json_info = await self.send_request('part/display')
+        info = json.loads(json_info.content)
+        await ctx.send(info['description'])
+        await ctx.send(info['bricklink_url'])
+
+        await ctx.send(f"P {number} Color {color} Duration {duration}")
+
+
+async def extract_integer(ctx, position, default):
+    value = default
+    if len(ctx.view.words) >= position:
+        try:
+            value = int(ctx.view.words[position])
+        except ValueError:
+            await ctx.send(f"Not an integer: {ctx.view.words[position]}. Ignoring bad value")
+    return value
 
 
 def run_bot(config):
