@@ -30,6 +30,7 @@ class LEGOThing(metaclass=abc.ABCMeta):
     number: str
     name: str = None
     description: str = None
+    color: str = None
     image_url: str = None
     bricklink_url: str = None
     rebrickable_url: str = None
@@ -105,12 +106,18 @@ class LEGOMiniFig(LEGOThing):
 
 class LEGOPart(LEGOThing):
 
+    def __init__(self, number, color):
+        super().__init__(number, color=color)
+
     @staticmethod
     def irc_command():
         return 'part'
 
     def scrape_info(self):
-        self.name = f"{self.irc_command()} {self.number}"
+        self.bricklink_url = f"https://www.bricklink.com/v2/catalog/catalogitem.page?P={self.number}"
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0) Gecko/20100101 Firefox/105.0'}
+        page = requests.get(self.bricklink_url, headers=headers)
+        self.name = f"{self.irc_command()} {self.number} Color: {self.color}"
         self.description = self.name
         self.image_url = APOCALYPSEBURG
 
@@ -125,6 +132,9 @@ class InputButtonHBox(remi.gui.HBox):
         self.id_label = remi.gui.Label(f"{command} id", style={'display': display_style})
         self.id_input = remi.gui.Input(style={'display': display_style})
         self.id_input.set_value(default_value)
+        self.color_label = remi.gui.Label(f"{command} color", style={'display': display_style})
+        self.color_input = remi.gui.Input(style={'display': display_style})
+        # self.color_input.set_value(default_value)
         self.duration_label = remi.gui.Label(f"{command} duration (s)", style={'display': display_style})
         self.duration_input = remi.gui.Input(style={'display': display_style})
         self.duration_input.set_value(default_duration)
@@ -132,10 +142,14 @@ class InputButtonHBox(remi.gui.HBox):
 
         self.button.onclick.do(self.on_button_click)
 
-        self.append((self.id_label, self.id_input, self.duration_label, self.duration_input, self.button))
+        self.append((self.id_label, self.id_input, self.color_label, self.color_input, self.duration_label, self.duration_input, self.button))
 
     def number(self, value):
         self.id_input.set_value(value)
+        return OK_HEADERS
+
+    def color(self, value):
+        self.color_input.set_value(value)
         return OK_HEADERS
 
     def duration(self, value):
@@ -159,7 +173,7 @@ class InputButtonHBox(remi.gui.HBox):
         except ValueError:
             duration = self.default_duration
             self.duration_input.set_value(self.default_duration)
-        thing = self.overlay.display(self.command, self.id_input.get_value(), duration)
+        thing = self.overlay.display(self.command, self.id_input.get_value(), self.color_input.get_value(), duration)
         json_thing = json.dumps(dataclasses.asdict(thing), )
         return json_thing, APPLICATION_JSON_HEADERS
 
@@ -218,16 +232,15 @@ class SmirnyBot9001Overlay(remi.App):
         self.root_vbox.append((self.image_vbox, self.inputs_hbox))
         return self.root_vbox
 
-    def get_lego_thing(self, command, number):
-        if (command, number) in self._lego_thing_cache:
-            return self._lego_thing_cache[(command, number)]
-        else:
-            lego_thing = self._commands[command](number)
-            self._lego_thing_cache[(command, number)] = lego_thing
-            return lego_thing
+    def get_lego_thing(self, command, number, color):
+        key = (command, number, color)
+        if key not in self._lego_thing_cache:
+            lego_thing = self._commands[command](number, color=color)
+            self._lego_thing_cache[key] = lego_thing
+        return self._lego_thing_cache[key]
 
-    def display(self, command, number, duration):
-        thing = self.get_lego_thing(command, number)
+    def display(self, command, number, color, duration):
+        thing = self.get_lego_thing(command, number, color)
         self.set_image_url(thing.image_url)
         self.set_description_text(thing.description)
         self.show_image(duration)
