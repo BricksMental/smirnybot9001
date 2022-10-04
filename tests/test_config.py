@@ -6,7 +6,7 @@ import tomlkit
 from smirnybot9001.config import parse_config, SmirnyBot9001Config
 
 MYDIR = Path(__file__).resolve().parent
-TEST_CONF =  MYDIR / 'test.conf'
+TEST_CONF = MYDIR / 'test.conf'
 MINIMAL_CONF = MYDIR / 'minimal.conf'
 BAD_CONF = MYDIR / 'bad.conf'
 
