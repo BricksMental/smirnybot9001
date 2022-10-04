@@ -33,8 +33,8 @@ class SmirnyBot9001ChatBot(commands.Bot):
         print(f'User id is | {self.user_id}')
 
     @commands.command()
-    async def wc(self, ctx: commands.Context):
-        await ctx.send(ctx.view.words)
+    async def colors(self, ctx: commands.Context):
+        await ctx.send(f"Find all LEGO colors and their BrickLink names at https://www.bricklink.com/catalogColors.asp")
 
     @commands.command()
     async def greasy(self, ctx: commands.Context):
@@ -118,7 +118,7 @@ class SmirnyBot9001ChatBot(commands.Bot):
         else:
             info = json.loads(json_info.content)
             await ctx.send(info['description'])
-            await ctx.send(info['bricklink_url'])
+            # await ctx.send(info['bricklink_url'])
 
         await ctx.send(f"PART {number} Color {color} Duration {duration}")
 
