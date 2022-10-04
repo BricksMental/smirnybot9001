@@ -21,13 +21,20 @@ class SmirnyBot9001ChatBot(commands.Bot):
         if query is not None:
             url = f"{url}?{query}"
         print(url)
-        return requests.get(url, timeout=5)
+        try:
+            return requests.get(url, timeout=5)
+        except requests.exceptions.RequestException as e:
+            print(f"Error getting {url}: {e}")
 
 
 
     async def event_ready(self):
         print(f'Logged in as | {self.nick}')
         print(f'User id is | {self.user_id}')
+
+    @commands.command()
+    async def wc(self, ctx: commands.Context):
+        await ctx.send(ctx.view.words)
 
     @commands.command()
     async def greasy(self, ctx: commands.Context):
@@ -106,11 +113,14 @@ class SmirnyBot9001ChatBot(commands.Bot):
         await self.send_request('part/color', f"value={color}")
 
         json_info = await self.send_request('part/display')
-        info = json.loads(json_info.content)
-        await ctx.send(info['description'])
-        await ctx.send(info['bricklink_url'])
+        if json_info is None:
+            await ctx.send(f"Unknown part: {number}")
+        else:
+            info = json.loads(json_info.content)
+            await ctx.send(info['description'])
+            await ctx.send(info['bricklink_url'])
 
-        await ctx.send(f"P {number} Color {color} Duration {duration}")
+        await ctx.send(f"PART {number} Color {color} Duration {duration}")
 
 
 async def extract_integer(ctx, position, default):

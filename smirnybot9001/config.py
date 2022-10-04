@@ -6,6 +6,7 @@ import typer
 
 # seconds
 MAX_DURATION = 60
+DEFAULT_DURATION = 30
 
 
 DEFAULT_CONFIG_PATH = Path.home() / 'smirnybot9001.conf'
@@ -30,7 +31,7 @@ class SmirnyBot9001Config():
     port: int = 4711
     start_browser: bool = False
     debug: bool = False
-    default_duration: int = 30
+    default_duration: int = DEFAULT_DURATION
 
     @classmethod
     def from_file_path(cls, config_path: Path):
@@ -49,7 +50,7 @@ class SmirnyBot9001Config():
         port = get_value('overlay', 'port', notfound=4711)
         start_browser = get_value('overlay', 'start_browser', notfound=False)
         debug = get_value('overlay', 'debug', notfound=False)
-        default_duration = get_value('overlay', 'default_duration', notfound=10)
+        default_duration = get_value('overlay', 'default_duration', notfound=DEFAULT_DURATION)
 
         display_wav_path = get_value('overlay', 'display_wav_path', notfound=None)
         if display_wav_path:
