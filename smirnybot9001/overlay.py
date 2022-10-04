@@ -50,8 +50,8 @@ class LEGOThing(metaclass=abc.ABCMeta):
 
 
 class LEGOSet(LEGOThing):
-    def __init__(self, number):
-        super().__init__(number)
+    def __init__(self, number, *args, **kwargs):
+        super().__init__(number, *args, **kwargs)
 
     @staticmethod
     def irc_command():
@@ -82,9 +82,8 @@ class LEGOSet(LEGOThing):
 
 
 class LEGOMiniFig(LEGOThing):
-    def __init__(self, number):
-        super().__init__(number)
-        # self.brickset_url = f"https://brickset.com/sets/{id}"
+    def __init__(self, number, *args, **kwargs):
+        super().__init__(number, *args, **kwargs)
 
     @staticmethod
     def irc_command():
