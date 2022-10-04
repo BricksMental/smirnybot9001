@@ -28,6 +28,7 @@ dependencies = [
     "tomlkit",
     "twitchio",
     "typer",
+    "fake_user_agent",
 ]
 classifiers = [
     "Programming Language :: Python :: 3 :: Only",
