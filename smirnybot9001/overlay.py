@@ -1,4 +1,5 @@
 import abc
+import re
 import dataclasses
 import json
 import time
@@ -10,6 +11,7 @@ import remi
 import requests
 import typer
 from bs4 import BeautifulSoup
+from fake_user_agent import user_agent
 from rich import print
 
 from smirnybot9001.config import SmirnyBot9001Config, create_config_and_inject_values, CONFIG_PATH_OPTION, WIDTH_OPTION, \
@@ -24,6 +26,26 @@ APPLICATION_JSON_HEADERS = {'Content-type': 'application/json; charset=utf-8', '
 
 OK_HEADERS = ('OK', TEXT_PLAIN_HEADERS)
 
+
+def get_with_user_agent(url):
+    ua = user_agent()
+    return requests.get(url, headers={'User-Agent': user_agent()})
+
+
+def extract_bricklink_part_info(bricklink_html):
+    soup = BeautifulSoup(bricklink_html, 'html.parser')
+    description = soup.find('meta', attrs={'name': 'description'}).get('content')
+    span_name = soup.find('span', id='item-name-title').text
+    match = re.match(r'^ItemName: (?P<name>.*), ItemType:.* ItemNo: (?P<bl_number>.*), Buy and sell', description)
+    if match:
+        name = match.group('name')
+        bl_number = match.group('bl_number')
+
+    # assert span_name == name
+    # if span_name != name:
+    #    print(f"found different names:{span_name} {name}")
+
+    return name, bl_number
 
 @dataclass
 class LEGOThing(metaclass=abc.ABCMeta):
@@ -113,12 +135,30 @@ class LEGOPart(LEGOThing):
         return 'part'
 
     def scrape_info(self):
-        self.bricklink_url = f"https://www.bricklink.com/v2/catalog/catalogitem.page?P={self.number}"
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0) Gecko/20100101 Firefox/105.0'}
-        page = requests.get(self.bricklink_url, headers=headers)
         self.name = f"{self.irc_command()} {self.number} Color: {self.color}"
         self.description = self.name
         self.image_url = APOCALYPSEBURG
+        # 1 try if it is a lego part id using brickset
+        #   if so use info from brickset -> END
+        # self.brickset_url = f"https://brickset.com/parts/{self.number}"
+        self.bricklink_url = f"https://www.bricklink.com/v2/catalog/catalogitem.page?ccName={self.number}"
+        r = get_with_user_agent(self.bricklink_url)
+        if r.status_code == 200:
+            name, bl_number = extract_bricklink_part_info(r.text)
+            self.name = bl_number
+            self.description = name
+
+        if r.status_code == 200:
+            # parse brickset now...
+            return
+
+
+
+
+        self.bricklink_url = f"https://www.bricklink.com/v2/catalog/catalogitem.page?P={self.number}"
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0) Gecko/20100101 Firefox/105.0'}
+        page = requests.get(self.bricklink_url, headers=headers)
+
 
 
 class InputButtonHBox(remi.gui.HBox):
@@ -210,7 +250,7 @@ class SmirnyBot9001Overlay(remi.App):
         self.image_vbox = remi.gui.VBox(height='95%', width='99%',
                                         style={'display': 'block', 'overflow': 'visible', 'text-align': 'center',
                                                'background': bgcolor})
-        self.inputs_hbox = remi.gui.HBox(height=height / 10, width=width,
+        self.inputs_vbox = remi.gui.VBox(height=height / 10, width=width,
                                          style={'display': 'block', 'overflow': 'auto', 'text-align': 'center',
                                                 'background': bgcolor})
 
@@ -225,10 +265,10 @@ class SmirnyBot9001Overlay(remi.App):
         for command, id in (('set', '10228'), ('fig', 'col128'), ('part', 'wtf')):
             input_button_hbox = InputButtonHBox(overlay=self, command=command, default_value=id,
                                                 show_controls=show_controls, default_duration=config.default_duration)
-            self.inputs_hbox.append(input_button_hbox)
+            self.inputs_vbox.append(input_button_hbox)
 
         self.image_vbox.append((self.image, self.image_description_label))
-        self.root_vbox.append((self.image_vbox, self.inputs_hbox))
+        self.root_vbox.append((self.image_vbox, self.inputs_vbox))
         return self.root_vbox
 
     def get_lego_thing(self, command, number, color):
