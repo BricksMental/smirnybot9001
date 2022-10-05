@@ -6,6 +6,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 import importlib.resources
+from urllib.parse import urlparse, parse_qs
 
 import remi
 import requests
@@ -32,6 +33,69 @@ def get_with_user_agent(url):
     return requests.get(url, headers={'User-Agent': user_agent()})
 
 
+
+def extract_from_bricklink(some_number, color):
+    try:
+        return extract_from_bricklink_lego_element_id(some_number)
+    except NotALEGOThingNumber:
+        print(f"{some_number} is not a LEGO Element Number")
+    try:
+        return extract_from_bricklink_partnumber(some_number, color)
+    except NotALEGOThingNumber:
+        print(f"{some_number} also not BL part number. I give up")
+        raise
+
+
+def normalize_color(color):
+    if color == '':
+        return None
+    else:
+        return color
+
+
+def extract_from_bricklink_partnumber(some_number, color=None):
+    bricklink_url = f"https://www.bricklink.com/v2/catalog/catalogitem.page?P={some_number}#T=C"
+    bl_color_id = normalize_color(color)
+    bl_part_id = None
+    # bl_part_number = some_number
+    if bl_color_id is not None:
+        bricklink_url += f"&C={bl_color_id}"
+    print(f"trying {bricklink_url}")
+    r = get_with_user_agent(bricklink_url)
+    if 'notFound' in r.url:
+        raise NotALEGOThingNumber
+    assert r.status_code == 200
+    name, bl_part_number, default_image_url = extract_bricklink_part_info(r.text)
+    assert bl_part_number == some_number
+    if bl_color_id is None:
+        image_url = default_image_url
+    else:
+        image_url = f"https://img.bricklink.com/ItemImage/PN/{bl_color_id}/{bl_part_number}.png"
+
+    return bl_color_id, bl_part_id, name, bl_part_number, r.url, image_url
+
+
+
+def extract_from_bricklink_lego_element_id(lego_element_id):
+    bricklink_url = f"https://www.bricklink.com/v2/catalog/catalogitem.page?ccName={lego_element_id}"
+    r = get_with_user_agent(bricklink_url)
+    if 'notFound' in r.url:
+        raise NotALEGOThingNumber
+
+    assert r.status_code == 200
+    if r.url != bricklink_url:
+        print(f"Got redirected from {bricklink_url} to: {r.url}")
+    query_values = parse_qs(urlparse(r.url).query)
+    assert query_values['ccName'][0] == lego_element_id
+    bl_color_id = query_values['idColor'][0]
+    bl_part_id = query_values['id'][0]
+    name, bl_part_number, default_image_url = extract_bricklink_part_info(r.text)
+    image_url = f"https://img.bricklink.com/ItemImage/PN/{bl_color_id}/{bl_part_number}.png"
+    return bl_color_id, bl_part_id, name, bl_part_number, r.url, image_url
+
+
+
+
 def extract_bricklink_part_info(bricklink_html):
     soup = BeautifulSoup(bricklink_html, 'html.parser')
     description = soup.find('meta', attrs={'name': 'description'}).get('content')
@@ -41,11 +105,15 @@ def extract_bricklink_part_info(bricklink_html):
         name = match.group('name')
         bl_number = match.group('bl_number')
 
-    # assert span_name == name
-    # if span_name != name:
-    #    print(f"found different names:{span_name} {name}")
+    #bricklink has  a bug in their code missing a ", i have to pick the wrong data apart here...
+    borked_image_url = soup.find('div', attrs={'data-color': '-99'}).get('data-imgurl')
+    default_image_url = borked_image_url.split(' ')[0]
 
-    return name, bl_number
+
+    return span_name, bl_number, default_image_url
+
+class NotALEGOThingNumber(Exception):
+    pass
 
 @dataclass
 class LEGOThing(metaclass=abc.ABCMeta):
@@ -141,7 +209,14 @@ class LEGOPart(LEGOThing):
         # 1 try if it is a lego part id using brickset
         #   if so use info from brickset -> END
         # self.brickset_url = f"https://brickset.com/parts/{self.number}"
+        bl_color_id, bl_part_id, name, bl_part_number, bricklink_url, image_url = extract_from_bricklink(self.number, self.color)
+        print(bl_color_id, bl_part_id, name, bl_part_number, bricklink_url, image_url)
+        self.name = bl_part_number
+        self.description = name
+        self.image_url = image_url
+        self.bricklink_url = bricklink_url
         self.bricklink_url = f"https://www.bricklink.com/v2/catalog/catalogitem.page?ccName={self.number}"
+        return
         r = get_with_user_agent(self.bricklink_url)
         if r.status_code == 200:
             name, bl_number = extract_bricklink_part_info(r.text)
@@ -188,6 +263,8 @@ class InputButtonHBox(remi.gui.HBox):
         return OK_HEADERS
 
     def color(self, value):
+        if value == 'NOCOLOR':
+            value = ''
         self.color_input.set_value(value)
         return OK_HEADERS
 
@@ -262,7 +339,7 @@ class SmirnyBot9001Overlay(remi.App):
                                                              'font-size': '40px', })
         self.set_description_text('🐸🐸🐸🐸 HELLO CHILLIBRIE 🐸🐸🐸🐸 ' * 2)
 
-        for command, id in (('set', '10228'), ('fig', 'col128'), ('part', 'wtf')):
+        for command, id in (('set', '10228'), ('fig', 'col128'), ('part', '6337632')):
             input_button_hbox = InputButtonHBox(overlay=self, command=command, default_value=id,
                                                 show_controls=show_controls, default_duration=config.default_duration)
             self.inputs_vbox.append(input_button_hbox)

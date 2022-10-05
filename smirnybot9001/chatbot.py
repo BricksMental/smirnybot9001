@@ -99,7 +99,7 @@ class SmirnyBot9001ChatBot(commands.Bot):
             return
 
         number = ctx.view.words[1]
-        color = None
+        color = 'NOCOLOR'
 
         if num_words == 1:
             duration = self.default_duration
