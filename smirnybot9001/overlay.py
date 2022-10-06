@@ -153,7 +153,7 @@ class LEGOSet(LEGOThing):
         title = soup.find('meta', {"property": "og:title"}).get('content')
         description = soup.find(property='og:description').get('content')
         if title == '' and description == '':
-            return None
+            return ''
         else:
             return f"☠{title}: {description}☠"
 
