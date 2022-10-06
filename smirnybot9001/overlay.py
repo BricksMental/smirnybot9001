@@ -12,11 +12,11 @@ import remi
 import requests
 import typer
 from bs4 import BeautifulSoup
-from fake_user_agent import user_agent
 from rich import print
 
 from smirnybot9001.config import SmirnyBot9001Config, create_config_and_inject_values, CONFIG_PATH_OPTION, WIDTH_OPTION, \
     HEIGHT_OPTION, ADDRESS_OPTION, PORT_OPTION, START_BROWSER_OPTION, DEBUG_OPTION, MAX_DURATION
+from smirnybot9001.util import get_with_user_agent
 
 APOCALYPSEBURG = 'https://img.bricklink.com/ItemImage/SN/0/70840-1.png'
 HARLEY = 'https://img.bricklink.com/ItemImage/MN/0/tlm134.png'
@@ -26,10 +26,6 @@ TEXT_PLAIN_HEADERS = {'Content-type': 'text/plain; charset=utf-8', 'Content-enco
 APPLICATION_JSON_HEADERS = {'Content-type': 'application/json; charset=utf-8', 'Content-encoding': 'utf-8'}
 
 OK_HEADERS = ('OK', TEXT_PLAIN_HEADERS)
-
-
-def get_with_user_agent(url):
-    return requests.get(url, headers={'User-Agent': user_agent()})
 
 
 def extract_from_bricklink(some_number, color):
@@ -156,8 +152,10 @@ class LEGOSet(LEGOThing):
         soup = BeautifulSoup(page.text, 'html.parser')
         title = soup.find('meta', {"property": "og:title"}).get('content')
         description = soup.find(property='og:description').get('content')
-        description = f"☠{title}: {description}☠"
-        return description
+        if title == '' and description == '':
+            return None
+        else:
+            return f"☠{title}: {description}☠"
 
     def get_image_url(self):
         if '-' not in self.number:

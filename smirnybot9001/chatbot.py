@@ -6,6 +6,7 @@ from twitchio.ext import commands
 import requests
 
 from smirnybot9001.config import create_config_and_inject_values, CONFIG_PATH_OPTION, CHANNEL_OPTION, ADDRESS_OPTION, PORT_OPTION
+from smirnybot9001.util import is_valid_set_number, is_valid_fig_number
 
 
 class SmirnyBot9001ChatBot(commands.Bot):
@@ -60,6 +61,10 @@ class SmirnyBot9001ChatBot(commands.Bot):
             return
 
         number = ctx.view.words[1]
+        if not is_valid_set_number(number):
+            await ctx.send('Invalid set number')
+            return
+
         duration = await extract_integer(ctx, position=2, default=self.default_duration)
 
         await self.send_request('set/number', f"value={number}")
@@ -67,7 +72,8 @@ class SmirnyBot9001ChatBot(commands.Bot):
 
         json_info = await self.send_request("set/display")
         info = json.loads(json_info.content)
-        await ctx.send(info['description'])
+        if info['description'] is not None:
+            await ctx.send(info['description'])
         await ctx.send(info['bricklink_url'])
 
     @commands.command()
@@ -78,6 +84,11 @@ class SmirnyBot9001ChatBot(commands.Bot):
             return
 
         number = ctx.view.words[1]
+
+        if not is_valid_fig_number(number):
+            await ctx.send('Invalid fig number')
+            return
+
         duration = await extract_integer(ctx, position=2, default=self.default_duration)
 
         await self.send_request('fig/number', f"value={number}")
