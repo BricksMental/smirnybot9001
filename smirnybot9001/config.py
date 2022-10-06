@@ -21,7 +21,7 @@ START_BROWSER_OPTION = typer.Option(None, '--start-browser', '-sb', show_default
 
 
 @dataclass()
-class SmirnyBot9001Config():
+class SmirnyBot9001Config:
     width: int
     height: int
     channel: str
@@ -36,6 +36,7 @@ class SmirnyBot9001Config():
     @classmethod
     def from_file_path(cls, config_path: Path):
         conf_toml = parse_config(config_path)
+
         def get_value(section, key, notfound=None):
             try:
                 return conf_toml[section][key]
@@ -46,7 +47,7 @@ class SmirnyBot9001Config():
         height = get_value('overlay', 'height', notfound=1080)
         channel = get_value('chatbot', 'channel')
         token = get_value('chatbot', 'token')
-        address =  get_value('overlay', 'address', notfound='127.0.0.1')
+        address = get_value('overlay', 'address', notfound='127.0.0.1')
         port = get_value('overlay', 'port', notfound=4711)
         start_browser = get_value('overlay', 'start_browser', notfound=False)
         debug = get_value('overlay', 'debug', notfound=False)

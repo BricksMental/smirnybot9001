@@ -26,8 +26,6 @@ class SmirnyBot9001ChatBot(commands.Bot):
         except requests.exceptions.RequestException as e:
             print(f"Error getting {url}: {e}")
 
-
-
     async def event_ready(self):
         print(f'Logged in as | {self.nick}')
         print(f'User id is | {self.user_id}')

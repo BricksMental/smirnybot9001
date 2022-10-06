@@ -29,9 +29,7 @@ OK_HEADERS = ('OK', TEXT_PLAIN_HEADERS)
 
 
 def get_with_user_agent(url):
-    ua = user_agent()
     return requests.get(url, headers={'User-Agent': user_agent()})
-
 
 
 def extract_from_bricklink(some_number, color):
@@ -75,7 +73,6 @@ def extract_from_bricklink_partnumber(some_number, color=None):
     return bl_color_id, bl_part_id, name, bl_part_number, r.url, image_url
 
 
-
 def extract_from_bricklink_lego_element_id(lego_element_id):
     bricklink_url = f"https://www.bricklink.com/v2/catalog/catalogitem.page?ccName={lego_element_id}"
     r = get_with_user_agent(bricklink_url)
@@ -94,8 +91,6 @@ def extract_from_bricklink_lego_element_id(lego_element_id):
     return bl_color_id, bl_part_id, name, bl_part_number, r.url, image_url
 
 
-
-
 def extract_bricklink_part_info(bricklink_html):
     soup = BeautifulSoup(bricklink_html, 'html.parser')
     description = soup.find('meta', attrs={'name': 'description'}).get('content')
@@ -105,15 +100,16 @@ def extract_bricklink_part_info(bricklink_html):
         name = match.group('name')
         bl_number = match.group('bl_number')
 
-    #bricklink has  a bug in their code missing a ", i have to pick the wrong data apart here...
+    # bricklink has  a bug in their code missing a ", i have to pick the wrong data apart here...
     borked_image_url = soup.find('div', attrs={'data-color': '-99'}).get('data-imgurl')
     default_image_url = borked_image_url.split(' ')[0]
 
-
     return span_name, bl_number, default_image_url
+
 
 class NotALEGOThingNumber(Exception):
     pass
+
 
 @dataclass
 class LEGOThing(metaclass=abc.ABCMeta):
@@ -206,9 +202,6 @@ class LEGOPart(LEGOThing):
         self.name = f"{self.irc_command()} {self.number} Color: {self.color}"
         self.description = self.name
         self.image_url = APOCALYPSEBURG
-        # 1 try if it is a lego part id using brickset
-        #   if so use info from brickset -> END
-        # self.brickset_url = f"https://brickset.com/parts/{self.number}"
         bl_color_id, bl_part_id, name, bl_part_number, bricklink_url, image_url = extract_from_bricklink(self.number, self.color)
         print(bl_color_id, bl_part_id, name, bl_part_number, bricklink_url, image_url)
         self.name = bl_part_number
@@ -216,25 +209,6 @@ class LEGOPart(LEGOThing):
         self.image_url = image_url
         self.bricklink_url = bricklink_url
         self.bricklink_url = f"https://www.bricklink.com/v2/catalog/catalogitem.page?ccName={self.number}"
-        return
-        r = get_with_user_agent(self.bricklink_url)
-        if r.status_code == 200:
-            name, bl_number = extract_bricklink_part_info(r.text)
-            self.name = bl_number
-            self.description = name
-
-        if r.status_code == 200:
-            # parse brickset now...
-            return
-
-
-
-
-        self.bricklink_url = f"https://www.bricklink.com/v2/catalog/catalogitem.page?P={self.number}"
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0) Gecko/20100101 Firefox/105.0'}
-        page = requests.get(self.bricklink_url, headers=headers)
-
-
 
 class InputButtonHBox(remi.gui.HBox):
     def __init__(self, overlay, command, default_value='', show_controls=True, default_duration=10, *args, **kwargs):
@@ -303,7 +277,7 @@ class SmirnyBot9001Overlay(remi.App):
 
     def idle(self):
 
-        if hasattr(self, '_hide_image_after'): # check if already initialized, idle() might be called before __init__
+        if hasattr(self, '_hide_image_after'):  # check if already initialized, idle() might be called before __init__
             if self._hide_image_after and time.time() > self._hide_image_after:
                 self._hide_image_after = None
                 self.hide_image()
@@ -339,8 +313,8 @@ class SmirnyBot9001Overlay(remi.App):
                                                              'font-size': '40px', })
         self.set_description_text('🐸🐸🐸🐸 HELLO CHILLIBRIE 🐸🐸🐸🐸 ' * 2)
 
-        for command, id in (('set', '10228'), ('fig', 'col128'), ('part', '6337632')):
-            input_button_hbox = InputButtonHBox(overlay=self, command=command, default_value=id,
+        for command, default in (('set', '10228'), ('fig', 'col128'), ('part', '6337632')):
+            input_button_hbox = InputButtonHBox(overlay=self, command=command, default_value=default,
                                                 show_controls=show_controls, default_duration=config.default_duration)
             self.inputs_vbox.append(input_button_hbox)
 

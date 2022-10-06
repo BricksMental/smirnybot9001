@@ -15,7 +15,7 @@ root = typer.Typer(add_completion=False, invoke_without_command=True, no_args_is
                    pretty_exceptions_show_locals=False)
 
 
-class SmirnyBot9001Boot():
+class SmirnyBot9001Boot:
     def __init__(self, config: SmirnyBot9001Config):
         # init the members to None before installing the signal handler
         self.overlay = None
