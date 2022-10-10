@@ -7,6 +7,7 @@ import requests
 
 from smirnybot9001.config import create_config_and_inject_values, CONFIG_PATH_OPTION, CHANNEL_OPTION, ADDRESS_OPTION, PORT_OPTION
 from smirnybot9001.util import is_valid_set_number, is_valid_fig_number
+from smirnybot9001.color_table import get_color_table
 
 
 class SmirnyBot9001ChatBot(commands.Bot):
@@ -16,6 +17,7 @@ class SmirnyBot9001ChatBot(commands.Bot):
         self.port = port
         self.default_duration = default_duration
         self.overlay_endpoint = f"http://{address}:{port}/"
+        self.color_table = get_color_table()
 
     async def send_request(self, path, query=None):
         url = f"{self.overlay_endpoint}{path}"
@@ -34,6 +36,7 @@ class SmirnyBot9001ChatBot(commands.Bot):
     @commands.command()
     async def colors(self, ctx: commands.Context):
         await ctx.send(f"Find all LEGO colors and their BrickLink names at https://www.bricklink.com/catalogColors.asp")
+        await ctx.send(self.color_table)
 
     @commands.command()
     async def greasy(self, ctx: commands.Context):
@@ -108,18 +111,28 @@ class SmirnyBot9001ChatBot(commands.Bot):
             return
 
         number = ctx.view.words[1]
+        duration = self.default_duration
         color = 'NOCOLOR'
 
-        if num_words == 1:
-            duration = self.default_duration
-        else:
-            duration = await extract_integer(ctx, position=num_words, default=self.default_duration)
+        if num_words > 1:
+            color = ctx.view.words[2]
             if num_words == 3:
-                color = ctx.view.words[2]
+                duration = await extract_integer(ctx, position=num_words, default=self.default_duration)
+
+        try:
+            color_id = int(color)
+            color_name = self.color_table[color_id]
+        except Exception as e:
+            print(type(e), e)
+            color_name = color.lower()
+            try:
+                color_id = self.color_table[color_name]
+            except KeyError:
+                color_id = color
 
         await self.send_request('part/number', f"value={number}")
         await self.send_request('part/duration', f"value={duration}")
-        await self.send_request('part/color', f"value={color}")
+        await self.send_request('part/color', f"value={color_id}")
 
         json_info = await self.send_request('part/display')
         if json_info is None:
