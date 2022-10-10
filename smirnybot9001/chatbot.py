@@ -10,7 +10,9 @@ from smirnybot9001.util import is_valid_set_number, is_valid_fig_number
 from smirnybot9001.color_table import get_color_table
 
 SYMBOLIC_PART_NAMES = {'frog': '33320',
-                       'banana': '33085'
+                       'banana': '33085',
+                       'octopus': '6086pb01',
+                       'whale': '6086pb01',
                        }
 
 
