@@ -9,6 +9,10 @@ from smirnybot9001.config import create_config_and_inject_values, CONFIG_PATH_OP
 from smirnybot9001.util import is_valid_set_number, is_valid_fig_number
 from smirnybot9001.color_table import get_color_table
 
+SYMBOLIC_PART_NAMES = {'frog': '33320',
+                       'banana': '33085'
+                       }
+
 
 class SmirnyBot9001ChatBot(commands.Bot):
     def __init__(self, token, channel, address, port, default_duration, prefix='!', ):
@@ -111,6 +115,12 @@ class SmirnyBot9001ChatBot(commands.Bot):
             return
 
         number = ctx.view.words[1]
+
+        try:
+            number = SYMBOLIC_PART_NAMES[number.lower()]
+        except KeyError:
+            pass # not a symboli part name
+
         duration = self.default_duration
         color = 'NOCOLOR'
 
