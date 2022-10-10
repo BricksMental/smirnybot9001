@@ -17,6 +17,7 @@ from rich import print
 from smirnybot9001.config import SmirnyBot9001Config, create_config_and_inject_values, CONFIG_PATH_OPTION, WIDTH_OPTION, \
     HEIGHT_OPTION, ADDRESS_OPTION, PORT_OPTION, START_BROWSER_OPTION, DEBUG_OPTION, MAX_DURATION
 from smirnybot9001.util import get_with_user_agent
+from smirnybot9001.color_table import get_color_table
 
 APOCALYPSEBURG = 'https://img.bricklink.com/ItemImage/SN/0/70840-1.png'
 HARLEY = 'https://img.bricklink.com/ItemImage/MN/0/tlm134.png'
@@ -204,6 +205,11 @@ class LEGOPart(LEGOThing):
         print(bl_color_id, bl_part_id, name, bl_part_number, bricklink_url, image_url)
         self.name = bl_part_number
         self.description = name
+        try:
+            color_name = get_color_table()[bl_color_id]
+            self.description += f" color: {color_name}"
+        except KeyError:
+            pass
         self.image_url = image_url
         self.bricklink_url = bricklink_url
         self.bricklink_url = f"https://www.bricklink.com/v2/catalog/catalogitem.page?ccName={self.number}"
@@ -261,6 +267,7 @@ class InputButtonHBox(remi.gui.HBox):
         except ValueError:
             duration = self.default_duration
             self.duration_input.set_value(self.default_duration)
+
         thing = self.overlay.display(self.command, self.id_input.get_value(), self.color_input.get_value(), duration)
         json_thing = json.dumps(dataclasses.asdict(thing), )
         return json_thing, APPLICATION_JSON_HEADERS
