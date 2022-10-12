@@ -8,7 +8,7 @@ from twitchio.ext import commands
 from smirnybot9001.color_table import get_color_table
 from smirnybot9001.config import create_config_and_inject_values, CONFIG_PATH_OPTION, CHANNEL_OPTION, ADDRESS_OPTION, \
     PORT_OPTION, DEFAULT_DURATION, MAX_DURATION
-from smirnybot9001.util import is_valid_set_number, is_valid_fig_number
+from smirnybot9001.util import is_identifier
 
 SYMBOLIC_PART_NAMES = {'frog': '33320',
                        'banana': '33085',
@@ -98,37 +98,11 @@ class SmirnyBot9001ChatBot(commands.Bot):
 
     @commands.command()
     async def part(self, ctx: commands.Context):
-        num_words = len(ctx.view.words)
-        usage = "☠☠ Usage: !part PARTNR [COLOR] [DURATION] ☠☠"
-        if num_words == 0 or num_words > 3:
-            await ctx.send(usage)
+        try:
+            number, color_name, color_id, duration = parse_part_command(ctx.view.words, self.color_table, self.default_duration)
+        except BadCommandValue as e:
+            await ctx.send(f"{e} ☠ Usage: !part PARTNR [COLOR] [DURATION]")
             return
-
-        number = ctx.view.words[1]
-
-        try:
-            number = SYMBOLIC_PART_NAMES[number.lower()]
-        except KeyError:
-            pass # not a symboli part name
-
-        duration = self.default_duration
-        color = 'NOCOLOR'
-
-        if num_words > 1:
-            color = ctx.view.words[2]
-            if num_words == 3:
-                duration = await extract_integer(ctx, position=num_words, default=self.default_duration)
-
-        try:
-            color_id = int(color)
-            color_name = self.color_table[color_id]
-        except Exception as e:
-            print(type(e), e)
-            color_name = color.lower()
-            try:
-                color_id = self.color_table[color_name]
-            except KeyError:
-                color_id = color
 
         await self.send_request('part/number', f"value={number}")
         await self.send_request('part/duration', f"value={duration}")
@@ -142,17 +116,7 @@ class SmirnyBot9001ChatBot(commands.Bot):
             await ctx.send(info['description'])
             # await ctx.send(info['bricklink_url'])
 
-        await ctx.send(f"PART {number} Color {color} Duration {duration}")
-
-
-async def extract_integer(ctx, position, default):
-    value = default
-    if len(ctx.view.words) >= position:
-        try:
-            value = int(ctx.view.words[position])
-        except ValueError:
-            await ctx.send(f"Not an integer: {ctx.view.words[position]}. Ignoring bad value")
-    return value
+        await ctx.send(f"PART {number} Color {color_name} Duration {duration}")
 
 
 def parse_set_command(words: dict, default_duration: int = DEFAULT_DURATION) -> (str, int):
@@ -162,25 +126,71 @@ def parse_set_command(words: dict, default_duration: int = DEFAULT_DURATION) -> 
 
     number = words[1]
     duration = default_duration
-    if not is_valid_set_number(number):
+    if not is_identifier(number):
         raise BadCommandValue(f"Invalid identifier: {number}")
 
     if len(words) > 1:
-        duration = words[2]
-        try:
-            duration = int(duration)
-        except ValueError:
-            raise BadCommandValue(f"Not an integer: {duration}")
-
-    if duration > MAX_DURATION:
-        print(f"some trickster wanted to DOS with a large duration: {duration}")
-        duration = MAX_DURATION
+        duration = extract_duration(words[2])
 
     return number, duration
 
 
 # for now sets and fig commands have the same syntax
 parse_fig_command = parse_set_command
+
+
+def parse_part_command(words: dict, color_table: dict, default_duration: int = DEFAULT_DURATION) -> (str, str, int, int):
+
+    if len(words) == 0:
+        raise BadCommandValue("No parameters given!")
+
+    number = words[1]
+    color = -99
+    duration = default_duration
+
+    try:
+        number = SYMBOLIC_PART_NAMES[number.lower()]
+    except KeyError:
+        pass  # not a symboli part name
+
+    if not is_identifier(number):
+        raise BadCommandValue(f"Invalid identifier: {number}")
+
+    if len(words) > 1:
+        color = words[2]
+        if len(words) > 2:
+            duration = extract_duration(words[3])
+
+    try:
+        color_id = int(color)
+    except ValueError:
+        color_name = color.lower()
+        try:
+            color_id = color_table[color_name]
+        except KeyError:
+            raise BadCommandValue(f"Unknown color name {color_name}")
+
+    assert isinstance(color_id, int)
+
+    if color_id not in get_color_table():
+        raise BadCommandValue(f"Unknown color id: {color_id} ")
+
+    color_name = color_table[color_id]
+
+    return number, color_name, color_id, duration
+
+
+def extract_duration(word):
+    try:
+        duration = int(word)
+    except ValueError:
+        raise BadCommandValue(f"Not an integer: {word}")
+
+    if duration > MAX_DURATION:
+        print(f"some trickster wanted to DOS with a large duration: {duration}")
+        duration = MAX_DURATION
+
+    return duration
 
 
 def run_bot(config):
