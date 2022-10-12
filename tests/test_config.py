@@ -38,8 +38,8 @@ def test_create_good_config_obj():
 def test_create_minimal_config_obj():
     config = SmirnyBot9001Config.from_file_path(MINIMAL_CONF)
     assert isinstance(config, SmirnyBot9001Config)
-    assert config.width is None
-    assert config.height is None
+    assert config.width == 1920
+    assert config.height == 1080
     assert config.address == '127.0.0.1'
     assert config.port == 4711
     assert config.channel is None
