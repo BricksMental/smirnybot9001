@@ -42,7 +42,6 @@ class SmirnyBot9001ChatBot(commands.Bot):
     @commands.command()
     async def colors(self, ctx: commands.Context):
         await ctx.send(f"Find all LEGO colors and their BrickLink names at https://www.bricklink.com/catalogColors.asp")
-        await ctx.send(self.color_table)
 
     @commands.command()
     async def greasy(self, ctx: commands.Context):
