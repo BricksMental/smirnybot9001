@@ -6,7 +6,7 @@ MAX_SET_NR_LENGTH = 128
 VALID_SET_CHARS = r'[\w\d\-]'
 
 
-def is_valid_set_number(candidate):
+def is_identifier(candidate):
     try:
         candidate = str(candidate)
     except ValueError:
@@ -18,12 +18,6 @@ def is_valid_set_number(candidate):
     if m is None:
         return False
     return True
-
-is_valid_fig_number = is_valid_set_number
-
-
-
-
 
 
 def get_with_user_agent(url):

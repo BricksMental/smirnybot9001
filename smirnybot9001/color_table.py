@@ -14,7 +14,6 @@ def get_color_table():
     return COLOR_TABLE
 
 
-
 def scrape_color_table():
     r = get_with_user_agent(COLOR_TABLE_URL)
     return parse_color_table(r.text)
@@ -46,6 +45,8 @@ def parse_color_table(color_table_html):
 
             result[color_id] = color_name
 
+    assert -99 not in result
+    result[-99] = 'NOCOLOR'
     return result
 
 

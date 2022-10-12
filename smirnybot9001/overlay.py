@@ -214,6 +214,7 @@ class LEGOPart(LEGOThing):
         self.bricklink_url = bricklink_url
         self.bricklink_url = f"https://www.bricklink.com/v2/catalog/catalogitem.page?ccName={self.number}"
 
+
 class InputButtonHBox(remi.gui.HBox):
     def __init__(self, overlay, command, default_value='', show_controls=True, default_duration=10, *args, **kwargs):
         super().__init__(attributes={'id': command}, *args, **kwargs)
@@ -241,7 +242,7 @@ class InputButtonHBox(remi.gui.HBox):
         return OK_HEADERS
 
     def color(self, value):
-        if value == 'NOCOLOR':
+        if value == '-99':
             value = ''
         self.color_input.set_value(value)
         return OK_HEADERS
