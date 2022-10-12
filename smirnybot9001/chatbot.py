@@ -1,19 +1,24 @@
-from pathlib import Path
 import json
+from pathlib import Path
 
+import requests
 import typer
 from twitchio.ext import commands
-import requests
 
-from smirnybot9001.config import create_config_and_inject_values, CONFIG_PATH_OPTION, CHANNEL_OPTION, ADDRESS_OPTION, PORT_OPTION
-from smirnybot9001.util import is_valid_set_number, is_valid_fig_number
 from smirnybot9001.color_table import get_color_table
+from smirnybot9001.config import create_config_and_inject_values, CONFIG_PATH_OPTION, CHANNEL_OPTION, ADDRESS_OPTION, \
+    PORT_OPTION, DEFAULT_DURATION, MAX_DURATION
+from smirnybot9001.util import is_valid_set_number, is_valid_fig_number
 
 SYMBOLIC_PART_NAMES = {'frog': '33320',
                        'banana': '33085',
                        'octopus': '6086pb01',
                        'whale': '6086pb01',
                        }
+
+
+class BadCommandValue(ValueError):
+    pass
 
 
 class SmirnyBot9001ChatBot(commands.Bot):
@@ -63,49 +68,33 @@ class SmirnyBot9001ChatBot(commands.Bot):
 
     @commands.command()
     async def set(self, ctx: commands.Context):
-        usage = "☠☠ Usage: !set SETNR [DURATION] ☠☠"
-        if not len(ctx.view.words) > 0:
-            await ctx.send(usage)
+        try:
+            number, duration = parse_set_command(ctx.view.words, self.default_duration)
+        except BadCommandValue as e:
+            await ctx.send(f"{e} ☠Usage: !set SETNR [DURATION]")
             return
-
-        number = ctx.view.words[1]
-        if not is_valid_set_number(number):
-            await ctx.send('Invalid set number')
-            return
-
-        duration = await extract_integer(ctx, position=2, default=self.default_duration)
 
         await self.send_request('set/number', f"value={number}")
         await self.send_request('set/duration', f"value={duration}")
 
         json_info = await self.send_request("set/display")
         info = json.loads(json_info.content)
-        if info['description'] is not None:
-            await ctx.send(info['description'])
-        await ctx.send(info['bricklink_url'])
+        await ctx.send(f"{info['description']} {info['bricklink_url']}")
 
     @commands.command()
     async def fig(self, ctx: commands.Context):
-        usage = "☠☠ Usage: !fig SETNR [DURATION] ☠☠"
-        if not len(ctx.view.words) > 0:
-            await ctx.send(usage)
+        try:
+            number, duration = parse_fig_command(ctx.view.words, self.default_duration)
+        except BadCommandValue as e:
+            await ctx.send(f"{e} ☠Usage: !fig SETNR [DURATION]")
             return
-
-        number = ctx.view.words[1]
-
-        if not is_valid_fig_number(number):
-            await ctx.send('Invalid fig number')
-            return
-
-        duration = await extract_integer(ctx, position=2, default=self.default_duration)
 
         await self.send_request('fig/number', f"value={number}")
         await self.send_request('fig/duration', f"value={duration}")
 
         json_info = await self.send_request('fig/display')
         info = json.loads(json_info.content)
-        await ctx.send(info['description'])
-        await ctx.send(info['bricklink_url'])
+        await ctx.send(f"{info['description']} {info['bricklink_url']}")
 
     @commands.command()
     async def part(self, ctx: commands.Context):
@@ -164,6 +153,34 @@ async def extract_integer(ctx, position, default):
         except ValueError:
             await ctx.send(f"Not an integer: {ctx.view.words[position]}. Ignoring bad value")
     return value
+
+
+def parse_set_command(words: dict, default_duration: int = DEFAULT_DURATION) -> (str, int):
+
+    if len(words) == 0:
+        raise BadCommandValue("No parameters given!")
+
+    number = words[1]
+    duration = default_duration
+    if not is_valid_set_number(number):
+        raise BadCommandValue(f"Invalid identifier: {number}")
+
+    if len(words) > 1:
+        duration = words[2]
+        try:
+            duration = int(duration)
+        except ValueError:
+            raise BadCommandValue(f"Not an integer: {duration}")
+
+    if duration > MAX_DURATION:
+        print(f"some trickster wanted to DOS with a large duration: {duration}")
+        duration = MAX_DURATION
+
+    return number, duration
+
+
+# for now sets and fig commands have the same syntax
+parse_fig_command = parse_set_command
 
 
 def run_bot(config):
