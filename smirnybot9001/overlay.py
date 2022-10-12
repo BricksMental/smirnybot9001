@@ -45,7 +45,7 @@ def normalize_color(color):
     if color == '':
         return None
     else:
-        return color
+        return int(color)
 
 
 def extract_from_bricklink_partnumber(some_number, color=None):
@@ -81,7 +81,7 @@ def extract_from_bricklink_lego_element_id(lego_element_id):
         print(f"Got redirected from {bricklink_url} to: {r.url}")
     query_values = parse_qs(urlparse(r.url).query)
     assert query_values['ccName'][0] == lego_element_id
-    bl_color_id = query_values['idColor'][0]
+    bl_color_id = int(query_values['idColor'][0])
     bl_part_id = query_values['id'][0]
     name, bl_part_number, default_image_url = extract_bricklink_part_info(r.text)
     image_url = f"https://img.bricklink.com/ItemImage/PN/{bl_color_id}/{bl_part_number}.png"
