@@ -22,7 +22,7 @@ def scrape_color_table():
 
 def parse_color_table(color_table_html):
 
-    ret = dict()
+    result = dict()
 
     soup = BeautifulSoup(color_table_html, 'html.parser')
     t = soup.find('table', attrs={'id': 'id-main-legacy-table'})
@@ -36,8 +36,17 @@ def parse_color_table(color_table_html):
             color_id = int(id_td.font.text)
             name_td = color_row.contents[3]
             color_name = name_td.font.text.strip().lower()
-            # print(color_name, color_id)
-            ret[color_name] = color_id
-            ret[color_id] = color_name
 
-    return ret
+            def add_color_synonym(color_name_synonym):
+                if color_name_synonym not in result:
+                    result[color_name_synonym] = color_id
+            add_color_synonym(color_name)
+            add_color_synonym(color_name.replace(' ', ''))
+            add_color_synonym(color_name.replace(' ', '-'))
+
+            result[color_id] = color_name
+
+    return result
+
+
+

@@ -8,8 +8,11 @@ COLOR_TABLE_HTML = MYDIR / 'bricklink_color_table.html'
 COLOR_TABLE = MYDIR / 'bricklink_color_table.pickle'
 
 
+# this test runs against the bricklink color table, only run it manually
 def test_scrape():
     ct = scrape_color_table()
+    expected = pickle.load(COLOR_TABLE.open('rb'))
+    assert ct == expected
 
 
 def test_parse():
