@@ -222,7 +222,6 @@ class LEGOPart(LEGOThing):
     def scrape_info(self):
         self.name = f"{self.irc_command()} {self.number} Color: {self.color}"
         self.description = self.name
-        self.image_url = APOCALYPSEBURG
         bl_color_id, bl_part_id, name, bl_part_number, bricklink_url, image_url = extract_from_bricklink(self.number, self.color)
         print(bl_color_id, bl_part_id, name, bl_part_number, bricklink_url, image_url)
         self.name = bl_part_number
@@ -234,7 +233,7 @@ class LEGOPart(LEGOThing):
             pass
         self.image_url = image_url
         self.bricklink_url = bricklink_url
-        self.bricklink_url = f"https://www.bricklink.com/v2/catalog/catalogitem.page?ccName={self.number}"
+        # self.bricklink_url = f"https://www.bricklink.com/v2/catalog/catalogitem.page?ccName={self.number}"
 
 
 class InputButtonHBox(remi.gui.HBox):

@@ -111,10 +111,9 @@ class SmirnyBot9001ChatBot(commands.Bot):
             await ctx.send(f"Unknown part: {number}")
         else:
             info = json.loads(json_info.content)
-            await ctx.send(info['description'])
-            # await ctx.send(info['bricklink_url'])
+            await ctx.send(f"{info['description']} {info['bricklink_url']}")
 
-        await ctx.send(f"PART {number} Color {color_name} Duration {duration}")
+        # await ctx.send(f"PART {number} Color {color_name} Duration {duration}")
 
 
 def parse_set_command(words: dict, default_duration: int = DEFAULT_DURATION) -> (str, int):
