@@ -8,6 +8,11 @@ from pathlib import Path
 import importlib.resources
 from urllib.parse import urlparse, parse_qs
 
+import socket
+import socketserver
+
+
+
 import remi
 import requests
 import typer
@@ -18,6 +23,23 @@ from smirnybot9001.config import SmirnyBot9001Config, create_config_and_inject_v
     HEIGHT_OPTION, ADDRESS_OPTION, PORT_OPTION, START_BROWSER_OPTION, DEBUG_OPTION, MAX_DURATION
 from smirnybot9001.util import get_with_user_agent
 from smirnybot9001.color_table import get_color_table
+
+
+# monkey patch socketserver.TCPServer to use IPV6 by default
+socketserver.TCPServer.address_family = socket.AF_INET6
+
+# monkey patch updated server_bind() method into socketserver.TCPServer
+# to ensure that socket.IPV6_V6ONLY
+orig_server_bind = socketserver.TCPServer.server_bind
+
+
+def server_bind_ipv4_and_ipv6(self):
+    self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+    orig_server_bind(self)
+
+
+socketserver.TCPServer.server_bind = server_bind_ipv4_and_ipv6
+
 
 APOCALYPSEBURG = 'https://img.bricklink.com/ItemImage/SN/0/70840-1.png'
 HARLEY = 'https://img.bricklink.com/ItemImage/MN/0/tlm134.png'
