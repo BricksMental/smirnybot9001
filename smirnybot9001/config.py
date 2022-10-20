@@ -27,8 +27,9 @@ class SmirnyBot9001Config:
     channel: str
     token: str
     display_wav_abs_path: Path = None
-    address: str = '127.0.0.1'
+    address: str = '::'
     port: int = 4711
+    overlay_endpoint: str = 'http://localhost:4711/'
     start_browser: bool = False
     debug: bool = False
     default_duration: int = DEFAULT_DURATION
@@ -47,8 +48,9 @@ class SmirnyBot9001Config:
         height = get_value('overlay', 'height', notfound=1080)
         channel = get_value('chatbot', 'channel')
         token = get_value('chatbot', 'token')
-        address = get_value('overlay', 'address', notfound='127.0.0.1')
+        address = get_value('overlay', 'address', notfound='::')
         port = get_value('overlay', 'port', notfound=4711)
+        overlay_endpoint = get_value('chatbot', 'overlay_endpoint', notfound='http://localhost:4711/')
         start_browser = get_value('overlay', 'start_browser', notfound=False)
         debug = get_value('overlay', 'debug', notfound=False)
         default_duration = get_value('overlay', 'default_duration', notfound=DEFAULT_DURATION)
@@ -59,7 +61,7 @@ class SmirnyBot9001Config:
             if not display_wav_path.is_absolute():
                 display_wav_path = config_path.parent / display_wav_path
 
-        return cls(width, height, channel, token, display_wav_path, address, port, start_browser, debug, default_duration)
+        return cls(width, height, channel, token, display_wav_path, address, port, overlay_endpoint, start_browser, debug, default_duration)
 
     def inject_values(self, value_dict: dict):
         for key, value in value_dict.items():

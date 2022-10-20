@@ -22,12 +22,10 @@ class BadCommandValue(ValueError):
 
 
 class SmirnyBot9001ChatBot(commands.Bot):
-    def __init__(self, token, channel, address, port, default_duration, prefix='!', ):
+    def __init__(self, token, channel, overlay_endpoint, default_duration, prefix='!', ):
         super().__init__(token=token, prefix=prefix, initial_channels=[channel, ])
-        self.address = address
-        self.port = port
+        self.overlay_endpoint = overlay_endpoint
         self.default_duration = default_duration
-        self.overlay_endpoint = f"http://{address}:{port}/"
         self.color_table = get_color_table()
 
     async def send_request(self, path, query=None):
@@ -194,7 +192,7 @@ def extract_duration(word):
 
 
 def run_bot(config):
-    bot = SmirnyBot9001ChatBot(config.token, config.channel, config.address, config.port, config.default_duration)
+    bot = SmirnyBot9001ChatBot(config.token, config.channel, config.overlay_endpoint, config.default_duration)
     bot.run()
 
 
