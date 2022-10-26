@@ -12,7 +12,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "smirnybot9001"
-version = "0.0.4"
+version = "0.0.5"
 description = "A twitch chatbot for displaying LEGO sets, minifigs and parts on an HTML overlay"
 authors = [
   { name="Bricks Mental", email="bricks.mental@gmail.com" },
