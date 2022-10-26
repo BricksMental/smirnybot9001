@@ -92,7 +92,7 @@ class SmirnyBot9001ChatBot(commands.Bot):
 
         json_info = await self.send_request('fig/display')
         info = json.loads(json_info.content)
-        await ctx.send(f"{info['description']} {info['bricklink_url']}")
+        await ctx.send(f"{info['description']} | Price new: {info['price_new']} Price used: {info['price_used']} | {info['bricklink_url']}")
 
     @commands.command()
     async def part(self, ctx: commands.Context):

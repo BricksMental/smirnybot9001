@@ -126,6 +126,16 @@ def extract_bricklink_part_info(bricklink_html):
     return span_name, bl_number, default_image_url
 
 
+def extract_fig_description_and_price(brickset_html):
+    soup = BeautifulSoup(brickset_html, 'html.parser')
+    description = soup.find('meta', {"property": "og:title"}).get('content')
+    new = soup.find('dt', text='Current value').findNext('dd').findNext('a')
+    price_new = new.text
+    used = new.findNext('a')
+    price_used = used.text
+    return description, price_new, price_used
+
+
 class NotALEGOThingNumber(Exception):
     pass
 
@@ -140,6 +150,8 @@ class LEGOThing(metaclass=abc.ABCMeta):
     bricklink_url: str = None
     rebrickable_url: str = None
     brickset_url: str = None
+    price_new: str = None
+    price_used: str = None
 
     def __post_init__(self):
         self.scrape_info()
@@ -200,14 +212,12 @@ class LEGOMiniFig(LEGOThing):
         self.brickset_url = f"https://brickset.com/minifigs/{self.number}"
         self.bricklink_url = f"https://www.bricklink.com/v2/catalog/catalogitem.page?M={self.number}"
         self.name = f"FIG {self.number}"
-        self.description = self.get_description()
         self.image_url = f"https://img.bricklink.com/ItemImage/MN/0/{self.number}.png"
+        self.get_description_and_price()
 
-    def get_description(self):
-        page = requests.get(self.brickset_url)
-        soup = BeautifulSoup(page.text, 'html.parser')
-        description = soup.find('meta', {"property": "og:title"}).get('content')
-        return description
+    def get_description_and_price(self):
+        page = get_with_user_agent(self.brickset_url)
+        self.description, self.price_new, self.price_used = extract_fig_description_and_price(page.text)
 
 
 class LEGOPart(LEGOThing):
