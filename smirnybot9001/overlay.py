@@ -335,14 +335,14 @@ class SmirnyBot9001Overlay(remi.App):
         self.root_vbox = remi.gui.VBox(height=height, width=width,
                                        style={'display': 'block', 'overflow': 'visible', 'text-align': 'center',
                                               'background': bgcolor})
-        self.image_vbox = remi.gui.VBox(height='95%', width='99%',
+        self.image_vbox = remi.gui.VBox(height='99%', width='99%',
                                         style={'display': 'block', 'overflow': 'visible', 'text-align': 'center',
                                                'background': bgcolor})
         self.inputs_vbox = remi.gui.VBox(height=height / 10, width=width,
                                          style={'display': 'block', 'overflow': 'auto', 'text-align': 'center',
                                                 'background': bgcolor})
 
-        self.image = remi.gui.Image(APOCALYPSEBURG, height='85%', margin='10px')
+        self.image = remi.gui.Image(APOCALYPSEBURG, style={'object-fit': 'contain', 'height': '85%', 'width': '98%'})
         self.image_description_label = remi.gui.Label(width='100%', height='15%',
                                                       style={'display': 'block', 'overflow': 'visible',
                                                              'text-align': 'center', 'background': 'rgba(0,0,0,.6)',
