@@ -26,6 +26,11 @@ following instructions
 The Bot has not been tested under Linux but should work just fine
 
 
+## Updating
+
+To update the Bot simply use pip in the location you installed it:
+
+1. Update the SmirnyBot inside the venv `python -m pip install --upgrade smirnybot9001` e.g. `C:\Users\***User***\Smirny_Venv\Scripts>python -m pip install --upgrade smirnybot9001`
+
 
 ## ‍☠
-
