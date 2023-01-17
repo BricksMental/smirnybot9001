@@ -22,3 +22,11 @@ def is_identifier(candidate):
 
 def get_with_user_agent(url):
     return requests.get(url, headers={'User-Agent': user_agent()})
+
+
+def parse_bricklink_meta_description(meta_description):
+    pattern = 'ItemName: LEGO (?P<name>.*), ItemType: (?P<type>.*), ItemNo: (?P<nr>.*?), '
+    match = re.search(pattern, meta_description)
+    if match is None:
+        raise ValueError(f"Not a valid bricklink meta description: {meta_description}")
+    return match.group('name'), match.group('type'), match.group('nr')
