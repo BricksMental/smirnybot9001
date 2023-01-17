@@ -40,7 +40,7 @@ def test_create_minimal_config_obj():
     assert isinstance(config, SmirnyBot9001Config)
     assert config.width == 1920
     assert config.height == 1080
-    assert config.address == '127.0.0.1'
+    assert config.address == '::'
     assert config.port == 4711
     assert config.channel is None
     assert config.token == 'TOPSECRET'
