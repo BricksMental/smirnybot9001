@@ -11,8 +11,6 @@ from urllib.parse import urlparse, parse_qs
 import socket
 import socketserver
 
-
-
 import remi
 import requests
 import typer
@@ -21,7 +19,7 @@ from rich import print
 
 from smirnybot9001.config import SmirnyBot9001Config, create_config_and_inject_values, CONFIG_PATH_OPTION, WIDTH_OPTION, \
     HEIGHT_OPTION, ADDRESS_OPTION, PORT_OPTION, START_BROWSER_OPTION, DEBUG_OPTION, MAX_DURATION
-from smirnybot9001.util import get_with_user_agent
+from smirnybot9001.util import get_with_user_agent, parse_bricklink_meta_description
 from smirnybot9001.color_table import get_color_table
 
 
@@ -116,7 +114,7 @@ def extract_bricklink_part_info(bricklink_html):
     span_name = soup.find('span', id='item-name-title').text
     match = re.match(r'^ItemName: (?P<name>.*), ItemType:.* ItemNo: (?P<bl_number>.*), Buy and sell', description)
     if match:
-        name = match.group('name')
+        name_ = match.group('name')
         bl_number = match.group('bl_number')
 
     # bricklink has  a bug in their code missing a ", i have to pick the wrong data apart here...
@@ -124,6 +122,17 @@ def extract_bricklink_part_info(bricklink_html):
     default_image_url = borked_image_url.split(' ')[0]
 
     return span_name, bl_number, default_image_url
+
+
+def extract_bricklink_set_info(bricklink_html):
+    soup = BeautifulSoup(bricklink_html, 'html.parser')
+    md = soup.find('meta', attrs={'name': 'description'})
+
+    description = None
+    if md is not None:
+        md = md.get('content')
+        description, type_, nr_ = parse_bricklink_meta_description(md)
+    return description
 
 
 def extract_fig_description_and_price(brickset_html):
@@ -187,6 +196,10 @@ class LEGOSet(LEGOThing):
         soup = BeautifulSoup(page.text, 'html.parser')
         title = soup.find('meta', {"property": "og:title"}).get('content')
         description = soup.find(property='og:description').get('content')
+        if description == '':
+            page = get_with_user_agent(self.bricklink_url)
+            description = extract_bricklink_set_info(page.text)
+
         if title == '' and description == '':
             return ''
         else:
@@ -342,7 +355,11 @@ class SmirnyBot9001Overlay(remi.App):
                                          style={'display': 'block', 'overflow': 'auto', 'text-align': 'center',
                                                 'background': bgcolor})
 
-        self.image = remi.gui.Image(APOCALYPSEBURG, style={'object-fit': 'contain', 'height': '85%', 'width': '98%'})
+        self.image = remi.gui.Image(APOCALYPSEBURG, style={'object-fit': 'contain',
+                                                           'height': '85%',
+                                                           'width': '98%',
+                                                           'animation-name': 'sk-rotateplane',
+                                                           'animation-duration': '4s'})
         self.image_description_label = remi.gui.Label(width='100%', height='15%',
                                                       style={'display': 'block', 'overflow': 'visible',
                                                              'text-align': 'center', 'background': 'rgba(0,0,0,.6)',

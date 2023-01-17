@@ -1,8 +1,5 @@
 from pathlib import Path
 
-import pytest
-from bs4 import BeautifulSoup
-
 from smirnybot9001.overlay import extract_bricklink_part_info
 
 MYDIR = Path(__file__).resolve().parent
