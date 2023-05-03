@@ -111,7 +111,7 @@ def extract_from_bricklink_lego_element_id(lego_element_id):
 def extract_bricklink_part_info(bricklink_html):
     soup = BeautifulSoup(bricklink_html, 'html.parser')
     description = soup.find('meta', attrs={'name': 'description'}).get('content')
-    span_name = soup.find('span', id='item-name-title').text
+    span_name = soup.find('h1', id='item-name-title').text
     match = re.match(r'^ItemName: (?P<name>.*), ItemType:.* ItemNo: (?P<bl_number>.*), Buy and sell', description)
     if match:
         name_ = match.group('name')
